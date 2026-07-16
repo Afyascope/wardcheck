@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WorkplaceConcern {
+  DELAYED_SALARY
+  SALARY_NOT_PAID
+  UNDERPAYMENT
+  CONTRACT_DISPUTE
+  POOR_MANAGEMENT
+  BULLYING
+  LONG_WORKING_HOURS
+  UNSAFE_WORKING_CONDITIONS
+  OTHER
+}
+
+model Admin {
+  id            Int         @id @default(autoincrement())
+  name          String
+  email         String      @unique
+  passwordHash  String      @map("password_hash")
+  role          AdminRole   @default(ADMIN)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  approvedReports Report[]  @relation("ApprovedReports")
+  auditLogs     AuditLog[]  @relation("PerformedBy")
+
+  @@map("admins")
+}
+
+model Facility {
+  id                 Int               @id @default(autoincrement())
+  wardcheckId        String            @unique @map("wardcheck_id")
+  facilityName       String            @map("facility_name")
+  slug               String            @unique
+  registrationNumber String            @unique @map("registration_number")
+  ownership          String
+  county             String
+  subCounty          String            @map("sub_county")
+  ward               String
+  facilityLevel      String            @map("facility_level")
+  facilityType       String            @map("facility_type")
+  reportsReceived    Int               @default(0) @map("reports_received")
+  primaryConcern     WorkplaceConcern? @map("primary_concern")
+  lastUpdated        DateTime?         @map("last_updated")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  reports            Report[]
+
+  @@index([facilityName])
+  @@index([county])
+  @@map("facilities")
+}
+
+model Report {
+  id              Int              @id @default(autoincrement())
+  facilityId      Int              @map("facility_id")
+  jobCategory     String           @map("job_category")
+  employmentYear  Int              @map("employment_year")
+  primaryConcern  WorkplaceConcern @map("primary_concern")
+  email           String?
+  fingerprintHash String           @map("fingerprint_hash")
+  ipHash          String           @map("ip_hash")
+  userAgent       String           @map("user_agent")
+  status          ReportStatus     @default(PENDING)
+  submittedAt     DateTime         @default(now()) @map("submitted_at")
+  approvedAt      DateTime?        @map("approved_at")
+  approvedById    Int?             @map("approved_by")
+  facility        Facility         @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  approvedBy      Admin?           @relation("ApprovedReports", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([fingerprintHash])
+  @@index([facilityId, fingerprintHash])
+  @@index([facilityId, email])
+  @@index([submittedAt])
+  @@map("reports")
+}
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  action        String
+  performedById Int?     @map("performed_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  performedBy   Admin?   @relation("PerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
