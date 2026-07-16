@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useEffect, useState } from "react";
+import { useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,9 +16,11 @@ import {
   getGetHospitalQueryKey,
   JobCategory,
   ReportReason,
-} from "@workspace/api-client-react";
+} from "@/hooks/api-client";
 import { CheckCircle2, Loader2, Building2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ApiError } from "@/api/client";
+import { getBrowserFingerprintHash } from "@/lib/browser-fingerprint";
 
 const formSchema = z.object({
   hospitalId: z.number({ required_error: "Please select a facility." }),
@@ -57,7 +59,29 @@ export default function Report() {
   const initialHospitalId = params.get("hospitalId") ? Number(params.get("hospitalId")) : undefined;
 
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [fingerprintHash, setFingerprintHash] = useState<string | undefined>();
   const createReport = useCreateReport();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void getBrowserFingerprintHash()
+      .then(({ fingerprintHash: hash }) => {
+        if (!cancelled) {
+          setFingerprintHash(hash);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFingerprintHash(undefined);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,18 +106,44 @@ export default function Report() {
     { query: { enabled: debouncedHospitalQuery.length > 1, queryKey: ["search-hospitals-report", debouncedHospitalQuery] } }
   );
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createReport.mutate({ data: {
-      hospitalId: values.hospitalId,
-      jobCategory: values.jobCategory,
-      employmentYear: values.employmentYear,
-      reason: values.reason,
-      email: values.email || undefined,
-    }}, {
-      onSuccess: () => {
-        setIsSuccess(true);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setSubmissionError(null);
+
+    try {
+      const resolvedFingerprintHash =
+        fingerprintHash ??
+        (await getBrowserFingerprintHash()
+          .then(({ fingerprintHash: hash }) => {
+            setFingerprintHash(hash);
+            return hash;
+          })
+          .catch(() => undefined));
+
+      await createReport.mutateAsync({
+        data: {
+          hospitalId: values.hospitalId,
+          jobCategory: values.jobCategory,
+          employmentYear: values.employmentYear,
+          reason: values.reason,
+          email: values.email || undefined,
+        },
+        fingerprintHash: resolvedFingerprintHash,
+      });
+      setIsSuccess(true);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 409) {
+          setSubmissionError("You have already submitted a workplace report for this facility.");
+          return;
+        }
+        if (error.status === 429) {
+          setSubmissionError("You have reached the report submission limit. Please try again later.");
+          return;
+        }
       }
-    });
+
+      setSubmissionError("We could not submit your report right now. Please try again.");
+    }
   };
 
   return (
@@ -118,6 +168,11 @@ export default function Report() {
                 <p className="text-muted-foreground mb-8">
                   Submit a workplace report to help improve transparency. Your personal information will remain strictly confidential and will never be published.
                 </p>
+                {submissionError && (
+                  <div className="mb-6 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    {submissionError}
+                  </div>
+                )}
 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

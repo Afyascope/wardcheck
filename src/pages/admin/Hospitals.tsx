@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useListAdminHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital, Hospital } from "@workspace/api-client-react";
+import { useListAdminHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital, useImportHospitals, Hospital } from "@/hooks/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -25,19 +25,14 @@ const hospitalSchema = z.object({
 
 function ImportPanel({ onImportSuccess }: { onImportSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState<{ created: number, updated: number, duplicatesDetected: number, errors: string[] } | null>(null);
+  const importMutation = useImportHospitals();
 
   const handleImport = async () => {
     if (!file) return;
-    setIsImporting(true);
     setResult(null);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const url = `${import.meta.env.BASE_URL}api/admin/hospitals/import`;
-      const response = await fetch(url, { method: 'POST', body: formData });
-      const data = await response.json();
+      const data = await importMutation.mutateAsync({ file });
       setResult(data);
       if (data.created > 0 || data.updated > 0) {
         onImportSuccess();
@@ -45,8 +40,6 @@ function ImportPanel({ onImportSuccess }: { onImportSuccess: () => void }) {
     } catch (e) {
       console.error(e);
       setResult({ created: 0, updated: 0, duplicatesDetected: 0, errors: ["Upload failed"] });
-    } finally {
-      setIsImporting(false);
     }
   };
 
@@ -60,8 +53,8 @@ function ImportPanel({ onImportSuccess }: { onImportSuccess: () => void }) {
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           className="max-w-sm"
         />
-        <Button onClick={handleImport} disabled={!file || isImporting} className="whitespace-nowrap">
-          {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+        <Button onClick={handleImport} disabled={!file || importMutation.isPending} className="whitespace-nowrap">
+          {importMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
           Import CSV/Excel
         </Button>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useListAdminReports, useApproveReport, useRejectReport, ReportStatus } from "@workspace/api-client-react";
+import { useListAdminReports, useApproveReport, useRejectReport, ReportStatus, getAdminReportsExportUrl } from "@/hooks/api-client";
+import type { ReportStatusValue } from "@/hooks/api-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +10,7 @@ import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function AdminReports() {
-  const [status, setStatus] = useState<ReportStatus | undefined>(ReportStatus.pending);
+  const [status, setStatus] = useState<ReportStatusValue | undefined>(ReportStatus.pending);
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
@@ -26,7 +27,7 @@ export default function AdminReports() {
     queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
   };
 
-  const exportUrl = `${import.meta.env.BASE_URL}api/admin/reports/export`;
+  const exportUrl = getAdminReportsExportUrl();
 
   return (
     <AdminLayout>
@@ -44,7 +45,7 @@ export default function AdminReports() {
         <div className="p-4 border-b bg-muted/5 flex items-center justify-between">
           <Tabs 
             value={status === undefined ? "all" : status} 
-            onValueChange={(v) => { setStatus(v === "all" ? undefined : v as ReportStatus); setPage(1); }}
+            onValueChange={(v) => { setStatus(v === "all" ? undefined : v as ReportStatusValue); setPage(1); }}
           >
             <TabsList>
               <TabsTrigger value="pending">Pending</TabsTrigger>
@@ -90,6 +91,11 @@ export default function AdminReports() {
                   <TableCell>
                     <div className="text-sm">{r.jobCategory} ({r.employmentYear})</div>
                     {r.email && <div className="text-xs text-muted-foreground">{r.email}</div>}
+                    {r.suspiciousSubmission && (
+                      <div className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                        Suspicious
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize

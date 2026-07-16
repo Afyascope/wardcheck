@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useSearchHospitals } from "@workspace/api-client-react";
+import { useSearchHospitals } from "@/hooks/api-client";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export function SearchBox() {

@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetBlogPost, getGetBlogPostQueryKey } from "@workspace/api-client-react";
+import { useGetBlogPost, getGetBlogPostQueryKey } from "@/hooks/api-client";
 import { useParams, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { AlertTriangle, ArrowLeft } from "lucide-react";

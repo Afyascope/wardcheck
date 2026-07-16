@@ -1,4 +1,4 @@
-import { useGetNationalStats } from "@workspace/api-client-react";
+import { useGetNationalStats } from "@/hooks/api-client";
 import { SearchBox } from "@/components/SearchBox";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
@@ -46,7 +46,7 @@ export default function Home() {
         {/* Stats Section */}
         <section className="py-16 px-4">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold mb-8 text-center">National Transparency Statistics</h2>
+            <h2 className="text-2xl font-bold mb-8 text-center">National Workplace Statistics</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>

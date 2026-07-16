@@ -1,10 +1,9 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
-import { useSearchHospitals } from "@workspace/api-client-react";
+import { useSearchHospitals } from "@/hooks/api-client";
 import { useSearch, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, FileText, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
 
 export default function Search() {
   const searchString = useSearch();

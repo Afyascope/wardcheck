@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useGetHospitalBySlug, getGetHospitalBySlugQueryKey } from "@workspace/api-client-react";
+import { useGetHospitalBySlug, getGetHospitalBySlugQueryKey } from "@/hooks/api-client";
 import { useParams, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ArrowLeft } from "lucide-react";

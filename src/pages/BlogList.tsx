@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useListBlogPosts } from "@workspace/api-client-react";
-import { BlogCategory } from "@workspace/api-client-react";
+import { useListBlogPosts } from "@/hooks/api-client";
 import { Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { format } from "date-fns";
 import { useSeo } from "@/hooks/use-seo";
 import { cn } from "@/lib/utils";
 
-const CATEGORIES = Object.values(BlogCategory);
-
 export default function BlogList() {
   const [category, setCategory] = useState<string | undefined>(undefined);
   const { data: posts, isLoading } = useListBlogPosts(
-    { category: category as (typeof CATEGORIES)[number] | undefined, limit: 50 },
+    { category, limit: 50 },
     { query: { queryKey: ["blog-posts", category] } },
   );
+  const { data: allPosts } = useListBlogPosts(
+    { limit: 200 },
+    { query: { queryKey: ["blog-categories"] } },
+  );
+  const categories = [...new Set((allPosts ?? []).map((post) => post.category))];
 
   useSeo({
     title: "Blog — WardCheck",
@@ -46,7 +48,7 @@ export default function BlogList() {
           >
             All
           </button>
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c}
               onClick={() => setCategory(c)}
