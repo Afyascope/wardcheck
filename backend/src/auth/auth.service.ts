@@ -7,6 +7,7 @@ import { PrismaService } from '../database/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { JwtAdminPayload } from './interfaces/jwt-payload.interface';
+import { LoginRateLimitService } from './login-rate-limit.service';
 
 @Injectable()
 export class AuthService {
@@ -14,9 +15,12 @@ export class AuthService {
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly loginRateLimit: LoginRateLimitService,
   ) {}
 
   async login(dto: LoginDto): Promise<LoginResponseDto> {
+    this.loginRateLimit.checkLimit(dto.email);
+
     const admin = await this.prismaService.admin.findUnique({
       where: { email: dto.email },
     });
@@ -29,6 +33,8 @@ export class AuthService {
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid email or password');
     }
+
+    this.loginRateLimit.reset(dto.email);
 
     const payload: JwtAdminPayload = {
       sub: admin.id,

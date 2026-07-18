@@ -18,6 +18,8 @@ import { ImportHospitalsResultDto } from './dto/import-hospitals-result.dto';
 import type { UploadedImportFile } from './imports.service';
 import { ImportsService } from './imports.service';
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
 @ApiTags('admin')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,9 +29,30 @@ export class ImportsController {
   constructor(private readonly importsService: ImportsService) {}
 
   @Post(['import', 'hospitals/import'])
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_UPLOAD_SIZE_BYTES },
+      fileFilter: (_req, file, cb) => {
+        const allowedMimes = [
+          'text/csv',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/csv',
+          'application/xlsx',
+          'application/xls',
+        ];
+        const allowedExtensions = ['.csv', '.xls', '.xlsx'];
+        const ext = (file.originalname ?? '').toLowerCase().slice(file.originalname.lastIndexOf('.'));
+        if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only CSV, XLS, and XLSX files are allowed.'), false);
+        }
+      },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Import facilities from an Excel or CSV file' })
+  @ApiOperation({ summary: 'Import facilities from an Excel or CSV file (max 10 MB)' })
   @ApiBody({
     schema: {
       type: 'object',

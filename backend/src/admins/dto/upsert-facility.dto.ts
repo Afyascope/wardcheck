@@ -54,6 +54,12 @@ export class UpsertFacilityDto {
   @Transform(({ value }) => normalizeOptionalString(value))
   registrationNumber?: string;
 
+  @ApiPropertyOptional({ description: 'Original KMPDC registration number' })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => normalizeOptionalString(value))
+  kmpdcRegistrationNumber?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

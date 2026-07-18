@@ -36,7 +36,10 @@ export class ReportsService {
     }
 
     const submittedAt = new Date();
-    const fingerprintHash = body.fingerprintHash?.trim();
+
+    const headerFingerprint = request.headers['x-report-fingerprint-hash'];
+    const headerFingerprintStr = Array.isArray(headerFingerprint) ? headerFingerprint[0] : headerFingerprint;
+    const fingerprintHash = (headerFingerprintStr ?? body.fingerprintHash ?? '').trim();
     if (!fingerprintHash) {
       throw new UnprocessableEntityException('Fingerprint hash is required.');
     }
@@ -47,32 +50,32 @@ export class ReportsService {
     const normalizedEmail = body.email?.trim().toLowerCase() || null;
     const config = this.getSubmissionConfig();
 
-    const existingReports = await this.prismaService.report.findMany({
-      where: {
-        facilityId,
-        OR: [
-          { fingerprintHash },
-          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
-        ],
-      },
-      select: {
-        status: true,
-        submittedAt: true,
-        fingerprintHash: true,
-        email: true,
-        ipHash: true,
-      },
-      orderBy: {
-        submittedAt: 'desc',
-      },
-    });
+    await this.prismaService.$transaction(async (tx) => {
+      const existingReports = await tx.report.findMany({
+        where: {
+          facilityId,
+          OR: [
+            { fingerprintHash },
+            ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+          ],
+        },
+        select: {
+          status: true,
+          submittedAt: true,
+          fingerprintHash: true,
+          email: true,
+          ipHash: true,
+        },
+        orderBy: {
+          submittedAt: 'desc',
+        },
+      });
 
-    if (this.isDuplicate(existingReports, fingerprintHash, normalizedEmail, config.duplicateWindowDays)) {
-      throw new ConflictException('You have already submitted a workplace report for this facility.');
-    }
+      if (this.isDuplicate(existingReports, fingerprintHash, normalizedEmail, config.duplicateWindowDays)) {
+        throw new ConflictException('You have already submitted a workplace report for this facility.');
+      }
 
-    this.enforceRateLimits(
-      await this.prismaService.report.findMany({
+      const recentReports = await tx.report.findMany({
         where: {
           OR: [{ fingerprintHash }, { ipHash }],
           submittedAt: {
@@ -86,26 +89,24 @@ export class ReportsService {
           status: true,
           email: true,
         },
-      }),
-      fingerprintHash,
-      ipHash,
-      config,
-      submittedAt,
-    );
+      });
 
-    await this.prismaService.report.create({
-      data: {
-        facilityId,
-        jobCategory: body.jobCategory,
-        employmentYear: body.employmentYear,
-        primaryConcern: this.mapConcern(body.reason),
-        email: normalizedEmail,
-        fingerprintHash,
-        ipHash,
-        userAgent,
-        status: ReportStatus.PENDING,
-        submittedAt,
-      },
+      this.enforceRateLimits(recentReports, fingerprintHash, ipHash, config, submittedAt);
+
+      await tx.report.create({
+        data: {
+          facilityId,
+          jobCategory: body.jobCategory,
+          employmentYear: body.employmentYear,
+          primaryConcern: this.mapConcern(body.reason),
+          email: normalizedEmail,
+          fingerprintHash,
+          ipHash,
+          userAgent,
+          status: ReportStatus.PENDING,
+          submittedAt,
+        },
+      });
     });
 
     return { success: true };

@@ -5,6 +5,8 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { SlugGeneratorService } from '../etl/slug-generator.service';
+import { WardcheckIdService } from '../etl/wardcheck-id.service';
 import { ImportHospitalsResultDto } from './dto/import-hospitals-result.dto';
 import { randomUUID } from 'crypto';
 import { Facility, Prisma } from '@prisma/client';
@@ -29,7 +31,11 @@ export interface UploadedImportFile {
 
 @Injectable()
 export class ImportsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly slugGeneratorService: SlugGeneratorService,
+    private readonly wardcheckIdService: WardcheckIdService,
+  ) {}
 
   async importFacilities(
     file: UploadedImportFile | undefined,
@@ -223,29 +229,33 @@ export class ImportsService {
     }
 
     const facilityName = row.facilityName.trim();
-    const slug = await this.ensureUniqueSlug(this.slugify(facilityName));
-    const wardcheckId = await this.generateWardcheckId();
+    const slug = await this.slugGeneratorService.ensureUniqueSlug(this.slugify(facilityName));
+    const wardcheckId = await this.wardcheckIdService.generate();
 
-    const facility = await this.prismaService.facility.create({
-      data: {
-        wardcheckId,
-        facilityName,
-        slug,
-        registrationNumber: row.registrationNumber ?? (await this.generateRegistrationNumber()),
-        ownership: row.ownership.trim(),
-        county: row.county.trim(),
-        subCounty: row.subCounty?.trim() ?? '',
-        ward: row.ward?.trim() ?? '',
-        facilityLevel: row.facilityLevel.trim(),
-        facilityType: row.facilityType?.trim() || row.facilityLevel.trim(),
-      },
-    });
+    const facility = await this.prismaService.$transaction(async (tx) => {
+      const f = await tx.facility.create({
+        data: {
+          wardcheckId,
+          facilityName,
+          slug,
+          registrationNumber: row.registrationNumber ?? (await this.generateRegistrationNumber()),
+          ownership: row.ownership.trim(),
+          county: row.county.trim(),
+          subCounty: row.subCounty?.trim() ?? '',
+          ward: row.ward?.trim() ?? '',
+          facilityLevel: row.facilityLevel.trim(),
+          facilityType: row.facilityType?.trim() || row.facilityLevel.trim(),
+        },
+      });
 
-    await this.prismaService.auditLog.create({
-      data: {
-        action: `FACILITY_IMPORTED_CREATED:${facility.id}`,
-        performedById: performedBy,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: `FACILITY_IMPORTED_CREATED:${f.id}`,
+          performedById: performedBy,
+        },
+      });
+
+      return f;
     });
 
     return facility;
@@ -259,32 +269,36 @@ export class ImportsService {
     const facilityName = row.facilityName.trim();
     const slug = facility.slug === this.slugify(facilityName)
       ? facility.slug
-      : await this.ensureUniqueSlug(this.slugify(facilityName), facility.id);
+      : await this.slugGeneratorService.ensureUniqueSlug(this.slugify(facilityName), facility.id);
 
     if (row.registrationNumber && row.registrationNumber !== facility.registrationNumber) {
       await this.ensureRegistrationNumberAvailable(row.registrationNumber, facility.id);
     }
 
-    const updated = await this.prismaService.facility.update({
-      where: { id: facility.id },
-      data: {
-        facilityName,
-        slug,
-        registrationNumber: row.registrationNumber ?? facility.registrationNumber,
-        ownership: row.ownership.trim(),
-        county: row.county.trim(),
-        subCounty: row.subCounty?.trim() ?? facility.subCounty,
-        ward: row.ward?.trim() ?? facility.ward,
-        facilityLevel: row.facilityLevel.trim(),
-        facilityType: row.facilityType?.trim() || row.facilityLevel.trim(),
-      },
-    });
+    const updated = await this.prismaService.$transaction(async (tx) => {
+      const u = await tx.facility.update({
+        where: { id: facility.id },
+        data: {
+          facilityName,
+          slug,
+          registrationNumber: row.registrationNumber ?? facility.registrationNumber,
+          ownership: row.ownership.trim(),
+          county: row.county.trim(),
+          subCounty: row.subCounty?.trim() ?? facility.subCounty,
+          ward: row.ward?.trim() ?? facility.ward,
+          facilityLevel: row.facilityLevel.trim(),
+          facilityType: row.facilityType?.trim() || row.facilityLevel.trim(),
+        },
+      });
 
-    await this.prismaService.auditLog.create({
-      data: {
-        action: `FACILITY_IMPORTED_UPDATED:${facility.id}`,
-        performedById: performedBy,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: `FACILITY_IMPORTED_UPDATED:${u.id}`,
+          performedById: performedBy,
+        },
+      });
+
+      return u;
     });
 
     return updated;

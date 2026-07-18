@@ -8,8 +8,11 @@ export class FacilityDetailDto extends FacilitySummaryDto {
   @ApiPropertyOptional()
   ward?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Internal unique registration identifier' })
   registrationNumber?: string | null;
+
+  @ApiPropertyOptional({ description: 'Original KMPDC registration number exactly as published' })
+  kmpdcRegistrationNumber?: string | null;
 
   @ApiPropertyOptional({
     description: 'Most common workplace concern surfaced for this facility',

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { useListAdminReports, useApproveReport, useRejectReport, ReportStatus, getAdminReportsExportUrl } from "@/hooks/api-client";
+import { useListAdminReports, useApproveReport, useRejectReport, ReportStatus } from "@/hooks/api-client";
 import type { ReportStatusValue } from "@/hooks/api-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Download, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+import { buildApiUrl } from "@/api/client";
+import { getStoredToken } from "@/contexts/AuthContext";
 
 export default function AdminReports() {
   const [status, setStatus] = useState<ReportStatusValue | undefined>(ReportStatus.pending);
@@ -27,17 +29,29 @@ export default function AdminReports() {
     queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
   };
 
-  const exportUrl = getAdminReportsExportUrl();
+  const handleExport = async () => {
+    const token = getStoredToken();
+    const url = buildApiUrl("/api/admin/reports/export");
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const response = await fetch(url, { headers, credentials: "same-origin" });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "wardcheck-reports.csv";
+    a.click();
+    URL.revokeObjectURL(blobUrl);
+  };
 
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-        <Button asChild variant="outline">
-          <a href={exportUrl} download>
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </a>
+        <Button variant="outline" onClick={handleExport}>
+          <Download className="w-4 h-4 mr-2" />
+          Export CSV
         </Button>
       </div>
 

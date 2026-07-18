@@ -7,39 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AdminRole {
-  SUPER_ADMIN
-  ADMIN
-}
-
-enum ReportStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum WorkplaceConcern {
-  DELAYED_SALARY
-  SALARY_NOT_PAID
-  UNDERPAYMENT
-  CONTRACT_DISPUTE
-  POOR_MANAGEMENT
-  BULLYING
-  LONG_WORKING_HOURS
-  UNSAFE_WORKING_CONDITIONS
-  OTHER
-}
-
 model Admin {
-  id            Int         @id @default(autoincrement())
-  name          String
-  email         String      @unique
-  passwordHash  String      @map("password_hash")
-  role          AdminRole   @default(ADMIN)
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  approvedReports Report[]  @relation("ApprovedReports")
-  auditLogs     AuditLog[]  @relation("PerformedBy")
+  id              Int             @id @default(autoincrement())
+  name            String
+  email           String          @unique
+  passwordHash    String          @map("password_hash")
+  role            AdminRole       @default(ADMIN)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  auditLogs       AuditLog[]      @relation("PerformedBy")
+  importHistories ImportHistory[]
+  approvedReports Report[]        @relation("ApprovedReports")
 
   @@map("admins")
 }
@@ -49,8 +27,9 @@ model Facility {
   wardcheckId        String            @unique @map("wardcheck_id")
   facilityName       String            @map("facility_name")
   slug               String            @unique
-  registrationNumber String            @unique @map("registration_number")
-  ownership          String
+  registrationNumber       String            @unique @map("registration_number")
+  kmpdcRegistrationNumber  String?           @map("kmpdc_registration_number")
+  ownership                String
   county             String
   subCounty          String            @map("sub_county")
   ward               String
@@ -65,6 +44,11 @@ model Facility {
 
   @@index([facilityName])
   @@index([county])
+  @@index([county(ops: raw("gin_trgm_ops"))], map: "facilities_county_trgm_idx", type: Gin)
+  @@index([facilityName(ops: raw("gin_trgm_ops"))], map: "facilities_facility_name_trgm_idx", type: Gin)
+  @@index([facilityName, slug], map: "facilities_name_slug_idx")
+  @@index([registrationNumber(ops: raw("gin_trgm_ops"))], map: "facilities_registration_number_trgm_idx", type: Gin)
+  @@index([slug(ops: raw("gin_trgm_ops"))], map: "facilities_slug_trgm_idx", type: Gin)
   @@map("facilities")
 }
 
@@ -82,11 +66,12 @@ model Report {
   submittedAt     DateTime         @default(now()) @map("submitted_at")
   approvedAt      DateTime?        @map("approved_at")
   approvedById    Int?             @map("approved_by")
+  approvedBy      Admin?           @relation("ApprovedReports", fields: [approvedById], references: [id])
   facility        Facility         @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  approvedBy      Admin?           @relation("ApprovedReports", fields: [approvedById], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([fingerprintHash])
+  @@index([ipHash])
   @@index([facilityId, fingerprintHash])
   @@index([facilityId, email])
   @@index([submittedAt])
@@ -98,8 +83,91 @@ model AuditLog {
   action        String
   performedById Int?     @map("performed_by")
   createdAt     DateTime @default(now()) @map("created_at")
-  performedBy   Admin?   @relation("PerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+  performedBy   Admin?   @relation("PerformedBy", fields: [performedById], references: [id])
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model ImportHistory {
+  id               Int                  @id @default(autoincrement())
+  startedAt        DateTime             @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt      DateTime?            @map("completed_at") @db.Timestamptz(3)
+  duration         Int?                 @map("duration")
+  recordsFetched   Int                  @default(0) @map("records_fetched")
+  imported         Int                  @default(0)
+  updated          Int                  @default(0)
+  duplicates       Int                  @default(0)
+  skipped          Int                  @default(0)
+  failed           Int                  @default(0)
+  status           ImportHistoryStatus  @default(RUNNING)
+  errorMessage     String?              @map("error_message")
+  trigger          ImportTriggerType    @default(MANUAL)
+  triggeredById    Int?                 @map("triggered_by")
+  scheduleName     String?              @map("schedule_name")
+  retryOfHistoryId Int?                 @map("retry_of_history_id")
+  retryOfHistory   ImportHistory?       @relation("ImportHistoryRetryOf", fields: [retryOfHistoryId], references: [id])
+  retryHistories   ImportHistory[]      @relation("ImportHistoryRetryOf")
+  triggeredBy      Admin?               @relation(fields: [triggeredById], references: [id])
+  errors           ImportHistoryError[]
+
+  @@index([startedAt])
+  @@index([status])
+  @@index([trigger])
+  @@index([triggeredById])
+  @@index([retryOfHistoryId])
+  @@map("import_history")
+}
+
+model ImportHistoryError {
+  id        Int           @id @default(autoincrement())
+  historyId Int           @map("history_id")
+  stage     String
+  source    String?
+  sourceRow Int?          @map("source_row")
+  message   String
+  rawData   Json?         @map("raw_data")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  history   ImportHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+
+  @@index([historyId])
+  @@index([stage])
+  @@index([createdAt])
+  @@map("import_history_errors")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ImportHistoryStatus {
+  RUNNING
+  COMPLETED
+  COMPLETED_WITH_ERRORS
+  FAILED
+}
+
+enum ImportTriggerType {
+  MANUAL
+  SCHEDULED
+  RETRY
+}
+
+enum WorkplaceConcern {
+  DELAYED_SALARY
+  SALARY_NOT_PAID
+  UNDERPAYMENT
+  CONTRACT_DISPUTE
+  POOR_MANAGEMENT
+  BULLYING
+  LONG_WORKING_HOURS
+  UNSAFE_WORKING_CONDITIONS
+  OTHER
 }

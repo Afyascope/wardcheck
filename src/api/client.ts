@@ -1,3 +1,5 @@
+import { getStoredToken } from "@/contexts/AuthContext";
+
 type Primitive = string | number | boolean | null | undefined;
 
 interface RequestOptions {
@@ -5,6 +7,7 @@ interface RequestOptions {
   params?: Record<string, Primitive>;
   body?: unknown;
   headers?: HeadersInit;
+  auth?: boolean;
 }
 
 export class ApiError extends Error {
@@ -43,13 +46,22 @@ function buildUrl(path: string, params?: RequestOptions["params"]): string {
 
 export async function apiRequest<T>(
   path: string,
-  { method = "GET", params, body, headers }: RequestOptions = {},
+  { method = "GET", params, body, headers, auth }: RequestOptions = {},
 ): Promise<T> {
+  const authHeaders: Record<string, string> = {};
+  if (auth) {
+    const token = getStoredToken();
+    if (token) {
+      authHeaders["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   const response = await fetch(buildUrl(path, params), {
     method,
     credentials: "same-origin",
     headers: {
       ...(body ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders,
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -69,4 +81,14 @@ export async function apiRequest<T>(
 
 export function buildApiUrl(path: string): string {
   return buildUrl(path);
+}
+
+export function buildAuthenticatedApiUrl(path: string): string {
+  const url = buildUrl(path);
+  const token = getStoredToken();
+  if (token) {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}token=${encodeURIComponent(token)}`;
+  }
+  return url;
 }

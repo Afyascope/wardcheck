@@ -21,6 +21,7 @@ const hospitalSchema = z.object({
   ownership: z.string().min(1, "Required"),
   level: z.string().min(1, "Required"),
   registrationNumber: z.string().optional(),
+  kmpdcRegistrationNumber: z.string().optional(),
 });
 
 function ImportPanel({ onImportSuccess }: { onImportSuccess: () => void }) {
@@ -99,8 +100,9 @@ function HospitalForm({
       ownership: initialData.ownership,
       level: initialData.level,
       registrationNumber: initialData.registrationNumber || "",
+      kmpdcRegistrationNumber: initialData.kmpdcRegistrationNumber || "",
     } : {
-      facilityName: "", county: "", subCounty: "", ward: "", ownership: "", level: "", registrationNumber: ""
+      facilityName: "", county: "", subCounty: "", ward: "", ownership: "", level: "", registrationNumber: "", kmpdcRegistrationNumber: ""
     }
   });
 
@@ -131,9 +133,12 @@ function HospitalForm({
             <FormItem><FormLabel>Ward (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="registrationNumber" render={({ field }) => (
-            <FormItem><FormLabel>Registration # (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Internal Reg # (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
           )} />
         </div>
+        <FormField control={form.control} name="kmpdcRegistrationNumber" render={({ field }) => (
+          <FormItem><FormLabel>KMPDC Registration # (Optional)</FormLabel><FormControl><Input {...field} placeholder="e.g. 02***4" /></FormControl><FormMessage /></FormItem>
+        )} />
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save
         </Button>
@@ -202,15 +207,16 @@ export default function AdminHospitals() {
               <TableHead>Facility Name</TableHead>
               <TableHead>County</TableHead>
               <TableHead>Level / Ownership</TableHead>
+              <TableHead>KMPDC Reg #</TableHead>
               <TableHead className="text-right">Reports</TableHead>
               <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
             ) : pageData?.items.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No facilities found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No facilities found.</TableCell></TableRow>
             ) : (
               pageData?.items.map(h => (
                 <TableRow key={h.id}>
@@ -219,6 +225,9 @@ export default function AdminHospitals() {
                   <TableCell>
                     <div className="text-sm">{h.level}</div>
                     <div className="text-xs text-muted-foreground">{h.ownership}</div>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground">
+                    {h.kmpdcRegistrationNumber || <span className="italic">manual</span>}
                   </TableCell>
                   <TableCell className="text-right font-semibold">{h.reportsReceived}</TableCell>
                   <TableCell className="text-right">

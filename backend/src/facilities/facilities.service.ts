@@ -41,6 +41,7 @@ export class FacilitiesService {
       FROM facilities
       WHERE facility_name ILIKE ${escapedPattern} ESCAPE '\\'
         OR registration_number ILIKE ${escapedPattern} ESCAPE '\\'
+        OR kmpdc_registration_number ILIKE ${escapedPattern} ESCAPE '\\'
         OR county ILIKE ${escapedPattern} ESCAPE '\\'
         OR slug ILIKE ${escapedPattern} ESCAPE '\\'
       ORDER BY facility_name ASC, slug ASC
@@ -107,6 +108,7 @@ export class FacilitiesService {
       subCounty: facility.subCounty,
       ward: facility.ward,
       registrationNumber: facility.registrationNumber,
+      kmpdcRegistrationNumber: facility.kmpdcRegistrationNumber,
       mostCommonConcern: facility.primaryConcern
         ? this.formatConcernLabel(facility.primaryConcern)
         : null,

@@ -66,10 +66,10 @@ export default function Facility() {
                   <span>{facility.ownership}</span>
                   <span className="w-1 h-1 rounded-full bg-border" />
                   <span>{facility.level}</span>
-                  {facility.registrationNumber && (
+                  {facility.kmpdcRegistrationNumber && (
                     <>
                       <span className="w-1 h-1 rounded-full bg-border" />
-                      <span>Reg: {facility.registrationNumber}</span>
+                      <span>Reg: {facility.kmpdcRegistrationNumber}</span>
                     </>
                   )}
                 </div>

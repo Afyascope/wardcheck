@@ -4,6 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { AdminsModule } from './admins/admins.module';
 import { AuthModule } from './auth/auth.module';
 import { FacilitiesModule } from './facilities/facilities.module';
+import { EtlModule } from './etl/etl.module';
 import { PrismaModule } from './database/prisma.module';
 import { HealthModule } from './health/health.module';
 import { ImportsModule } from './imports/imports.module';
@@ -23,6 +24,7 @@ import { validateEnv } from './config/env.validation';
     }),
     AuthModule,
     AdminsModule,
+    EtlModule,
     ImportsModule,
     PrismaModule,
     FacilitiesModule,

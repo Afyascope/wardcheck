@@ -1,7 +1,6 @@
 import { useMutation, useQuery, type QueryKey, type UseQueryOptions } from "@tanstack/react-query";
 import {
   approveReport,
-  getAdminReportsExportUrl,
   listAdminReports,
   rejectReport,
 } from "@/api/admin";
@@ -47,5 +46,3 @@ export function useRejectReport() {
     mutationFn: ({ id }: { id: number }) => rejectReport(id),
   });
 }
-
-export { getAdminReportsExportUrl };

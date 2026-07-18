@@ -16,6 +16,8 @@ import {
 import { randomUUID } from 'crypto';
 import { FacilityDetailDto } from '../facilities/dto/facility-detail.dto';
 import { PrismaService } from '../database/prisma.service';
+import { SlugGeneratorService } from '../etl/slug-generator.service';
+import { WardcheckIdService } from '../etl/wardcheck-id.service';
 import { AdminFacilityQueryDto } from './dto/admin-facility-query.dto';
 import { AdminReportQueryDto } from './dto/admin-report-query.dto';
 import { AdminReportItemDto } from './dto/admin-report-item.dto';
@@ -45,6 +47,8 @@ export class AdminsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
+    private readonly slugGeneratorService: SlugGeneratorService,
+    private readonly wardcheckIdService: WardcheckIdService,
   ) {}
 
   async getDashboardStats(): Promise<AdminStatsDto> {
@@ -263,6 +267,7 @@ export class AdminsService {
             { facilityName: { contains: search, mode: 'insensitive' } },
             { county: { contains: search, mode: 'insensitive' } },
             { registrationNumber: { contains: search, mode: 'insensitive' } },
+            { kmpdcRegistrationNumber: { contains: search, mode: 'insensitive' } },
             { slug: { contains: search, mode: 'insensitive' } },
           ],
         }
@@ -296,32 +301,38 @@ export class AdminsService {
     const subCounty = dto.subCounty?.trim() || '';
     const ward = dto.ward?.trim() || '';
     const registrationNumber = dto.registrationNumber?.trim() || (await this.generateRegistrationNumber());
+    const kmpdcRegistrationNumber = dto.kmpdcRegistrationNumber?.trim() || null;
 
     await this.ensureRegistrationNumberAvailable(registrationNumber);
 
-    const wardcheckId = await this.generateWardcheckId();
-    const slug = await this.ensureUniqueSlug(this.slugify(facilityName));
+    const wardcheckId = await this.wardcheckIdService.generate();
+    const slug = await this.slugGeneratorService.ensureUniqueSlug(this.slugify(facilityName));
 
-    const facility = await this.prismaService.facility.create({
-      data: {
-        wardcheckId,
-        facilityName,
-        slug,
-        registrationNumber,
-        ownership,
-        county,
-        subCounty,
-        ward,
-        facilityLevel,
-        facilityType,
-      },
-    });
+    const facility = await this.prismaService.$transaction(async (tx) => {
+      const f = await tx.facility.create({
+        data: {
+          wardcheckId,
+          facilityName,
+          slug,
+          registrationNumber,
+          kmpdcRegistrationNumber,
+          ownership,
+          county,
+          subCounty,
+          ward,
+          facilityLevel,
+          facilityType,
+        },
+      });
 
-    await this.prismaService.auditLog.create({
-      data: {
-        action: `FACILITY_CREATED:${facility.id}`,
-        performedById: adminId,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: `FACILITY_CREATED:${f.id}`,
+          performedById: adminId,
+        },
+      });
+
+      return f;
     });
 
     return this.mapFacility(facility);
@@ -349,6 +360,7 @@ export class AdminsService {
     const subCounty = dto.subCounty?.trim() ?? existing.subCounty;
     const ward = dto.ward?.trim() ?? existing.ward;
     const registrationNumber = dto.registrationNumber?.trim() ?? existing.registrationNumber;
+    const kmpdcRegistrationNumber = dto.kmpdcRegistrationNumber?.trim() ?? existing.kmpdcRegistrationNumber;
 
     if (registrationNumber !== existing.registrationNumber) {
       await this.ensureRegistrationNumberAvailable(registrationNumber, facilityId);
@@ -357,26 +369,31 @@ export class AdminsService {
     const slugBase = this.slugify(facilityName);
     const slug = slugBase === existing.slug ? existing.slug : await this.ensureUniqueSlug(slugBase, facilityId);
 
-    const facility = await this.prismaService.facility.update({
-      where: { id: facilityId },
-      data: {
-        facilityName,
-        slug,
-        registrationNumber,
-        ownership,
-        county,
-        subCounty,
-        ward,
-        facilityLevel,
-        facilityType,
-      },
-    });
+    const facility = await this.prismaService.$transaction(async (tx) => {
+      const f = await tx.facility.update({
+        where: { id: facilityId },
+        data: {
+          facilityName,
+          slug,
+          registrationNumber,
+          kmpdcRegistrationNumber,
+          ownership,
+          county,
+          subCounty,
+          ward,
+          facilityLevel,
+          facilityType,
+        },
+      });
 
-    await this.prismaService.auditLog.create({
-      data: {
-        action: `FACILITY_UPDATED:${facility.id}`,
-        performedById: adminId,
-      },
+      await tx.auditLog.create({
+        data: {
+          action: `FACILITY_UPDATED:${f.id}`,
+          performedById: adminId,
+        },
+      });
+
+      return f;
     });
 
     return this.mapFacility(facility);
@@ -393,15 +410,17 @@ export class AdminsService {
       throw new NotFoundException(`Facility ${facilityId} was not found`);
     }
 
-    await this.prismaService.facility.delete({
-      where: { id: facilityId },
-    });
+    await this.prismaService.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          action: `FACILITY_DELETED:${facilityId}`,
+          performedById: adminId,
+        },
+      });
 
-    await this.prismaService.auditLog.create({
-      data: {
-        action: `FACILITY_DELETED:${facilityId}`,
-        performedById: adminId,
-      },
+      await tx.facility.delete({
+        where: { id: facilityId },
+      });
     });
   }
 
@@ -484,6 +503,7 @@ export class AdminsService {
       subCounty: facility.subCounty,
       ward: facility.ward,
       registrationNumber: facility.registrationNumber,
+      kmpdcRegistrationNumber: facility.kmpdcRegistrationNumber,
       mostCommonConcern: facility.primaryConcern ? this.formatConcern(facility.primaryConcern) : null,
       facilityType: facility.facilityType,
       createdAt: facility.createdAt.toISOString(),

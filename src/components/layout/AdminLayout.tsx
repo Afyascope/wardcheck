@@ -1,11 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useClerk } from "@clerk/react";
-import { Building2, FileText, LayoutDashboard, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Building2, FileText, LayoutDashboard, LogOut, Database } from "lucide-react";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-[100dvh] flex flex-col font-sans bg-muted/10">
@@ -30,8 +30,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <FileText className="w-4 h-4" />
               Reports
             </Link>
+            <Link href="/admin/imports" className={`text-sm font-medium flex items-center gap-2 ${location.startsWith('/admin/imports') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <Database className="w-4 h-4" />
+              KMPDC Import
+            </Link>
             <div className="w-px h-6 bg-border mx-2" />
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => signOut({ redirectUrl: "/" })}>
+            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => { logout(); window.location.href = "/admin/login"; }}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
             </Button>

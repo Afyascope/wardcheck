@@ -6,6 +6,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+function getAllowedOrigins(): string[] {
+  const raw = process.env.CORS_ORIGINS ?? '';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
@@ -15,10 +23,21 @@ async function bootstrap(): Promise<void> {
   app.useLogger(logger);
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  const allowedOrigins = getAllowedOrigins();
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction && allowedOrigins.length > 0) {
+    app.enableCors({
+      origin: allowedOrigins,
+      credentials: true,
+    });
+  } else {
+    app.enableCors({
+      origin: true,
+      credentials: true,
+    });
+  }
+
   app.use(helmet());
   app.setGlobalPrefix('api', {
     exclude: [{ path: 'health', method: RequestMethod.GET }],
@@ -34,15 +53,18 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('WardCheck API')
-    .setDescription('WardCheck backend API for workplace transparency in Kenya')
-    .setVersion(process.env.npm_package_version ?? '0.1.0')
-    .addBearerAuth()
-    .build();
+  if (!isProduction) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('WardCheck API')
+      .setDescription('WardCheck backend API for workplace transparency in Kenya')
+      .setVersion(process.env.npm_package_version ?? '0.1.0')
+      .addBearerAuth()
+      .build();
 
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, swaggerDocument);
+    logger.log('Swagger docs available at /api/docs');
+  }
 
   const port = Number(process.env.PORT ?? 3001);
   await app.listen(port, '0.0.0.0');

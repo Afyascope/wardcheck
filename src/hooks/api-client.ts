@@ -17,8 +17,15 @@ export {
   useListAdminReports,
   useApproveReport,
   useRejectReport,
-  getAdminReportsExportUrl,
 } from "@/hooks/useAdminReports";
+export {
+  useListImportHistory,
+  useGetImportDetail,
+  useGetImportErrors,
+  useGetImportSummary,
+  useStartKmpdcSync,
+  useRetryKmpdcImport,
+} from "@/hooks/useImportManagement";
 export { JobCategory, ReportReason, ReportStatus } from "@/types/api";
 export type {
   Hospital,

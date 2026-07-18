@@ -49,6 +49,7 @@ export interface HospitalDetail extends HospitalSearchResult {
   subCounty?: string | null;
   ward?: string | null;
   registrationNumber?: string | null;
+  kmpdcRegistrationNumber?: string | null;
   mostCommonConcern?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -119,6 +120,7 @@ export interface UpsertHospitalInput {
   ownership: string;
   level: string;
   registrationNumber?: string;
+  kmpdcRegistrationNumber?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -150,4 +152,53 @@ export interface ImportHospitalsResult {
   updated: number;
   duplicatesDetected: number;
   errors: string[];
+}
+
+export interface ImportHistoryItem {
+  id: number;
+  startedAt: string;
+  completedAt: string | null;
+  duration: number | null;
+  recordsFetched: number;
+  imported: number;
+  updated: number;
+  duplicates: number;
+  skipped: number;
+  failed: number;
+  status: string;
+  trigger: string;
+  triggeredById: number | null;
+  scheduleName: string | null;
+  retryOfHistoryId: number | null;
+}
+
+export interface ImportHistoryDetail extends ImportHistoryItem {
+  errorMessage: string | null;
+}
+
+export interface ImportSummary {
+  historyId: number;
+  recordsFetched: number;
+  imported: number;
+  updated: number;
+  duplicates: number;
+  skipped: number;
+  failed: number;
+  status: string;
+  trigger: string;
+  triggeredById: number | null;
+  scheduleName: string | null;
+  retryOfHistoryId: number | null;
+  duration: number | null;
+}
+
+export interface ImportHistoryErrorItem {
+  id: number;
+  historyId: number;
+  stage: string;
+  source: string | null;
+  sourceRow: number | null;
+  message: string;
+  rawData: Record<string, unknown> | null;
+  createdAt: string;
 }
