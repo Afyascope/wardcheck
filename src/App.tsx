@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { Link } from "wouter";
+
 
 import Home from "@/pages/Home";
 import Search from "@/pages/Search";
@@ -63,14 +65,54 @@ function AppRoutes() {
         <AdminRoute component={AdminImports} />
       </Route>
 
-      <Route>
-        <AppLayout>
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
-            <h1 className="text-4xl font-bold mb-4">404</h1>
-            <p className="text-muted-foreground mb-8">Page not found</p>
-          </div>
-        </AppLayout>
-      </Route>
+     <Route>
+  <AppLayout>
+    <div className="flex-1 flex items-center justify-center px-6 py-20">
+      <div className="max-w-lg text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <span className="text-4xl">🔍</span>
+        </div>
+
+        <h1 className="text-5xl font-bold tracking-tight">404</h1>
+
+        <h2 className="mt-4 text-2xl font-semibold">
+          Page Not Found
+        </h2>
+
+        <p className="mt-4 text-muted-foreground leading-relaxed">
+          The page you're looking for doesn't exist or may have been moved.
+          If you entered the address manually, please check the URL and try again.
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 font-medium text-primary-foreground hover:opacity-90 transition"
+          >
+            Return Home
+          </Link>
+
+          <Link
+            to="/search"
+            className="inline-flex items-center justify-center rounded-lg border px-5 py-3 font-medium hover:bg-muted transition"
+          >
+            Search Facilities
+          </Link>
+        </div>
+
+        <p className="mt-8 text-sm text-muted-foreground">
+          Need help?{" "}
+          <a
+            href="mailto:support@wardcheck.co.ke"
+            className="text-primary hover:underline"
+          >
+            support@wardcheck.co.ke
+          </a>
+        </p>
+      </div>
+    </div>
+  </AppLayout>
+</Route>
     </Switch>
   );
 }

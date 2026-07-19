@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "node --import tsx --test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "generate-sitemap": "tsx scripts/generate-sitemap.ts"
+    "generate-sitemap": "tsx --env-file=.env scripts/generate-sitemap.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

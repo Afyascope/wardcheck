@@ -1,89 +1,86 @@
 /**
- * Generates a static sitemap.xml for the WardCheck SPA by querying public APIs.
+ * Generates a production-ready static sitemap.xml for the WardCheck SPA.
  *
- * Usage: npm run generate-sitemap -- <site-origin> [api-origin]
- * Example: npm run generate-sitemap -- https://wardcheck.example.com https://api.wardcheck.example.com
+ * Environment variables (read from .env file or shell):
+ *   SITE_URL   – production site origin used in <loc> URLs (default: https://wardcheck.co.ke)
+ *   API_ORIGIN – backend API origin used only for fetching facility data (default: http://localhost:3001)
+ *
+ * Usage:
+ *   npm run generate-sitemap
  */
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-type SlugItem = {
-  slug: string;
-  updatedAt?: string;
-  publishedAt?: string;
-};
+const SITE_URL = (
+  process.env.SITE_URL || "https://wardcheck.co.ke"
+).replace(/\/$/, "");
 
-function normalizeOrigin(value: string) {
-  return value.replace(/\/$/, "");
-}
+const API_ORIGIN = (
+  process.env.API_ORIGIN || "http://localhost:3001"
+).replace(/\/$/, "");
+
+type FacilitySlugItem = {
+  slug: string;
+  updatedAt: string | null;
+};
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `Request failed with status ${response.status}`);
+    throw new Error(
+      text || `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
+    );
   }
   return (await response.json()) as T;
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 async function main() {
-  const args = process.argv.slice(2).filter((arg) => arg !== "--");
-  const siteOriginArg = args[0];
-  const apiOriginArg = args[1] ?? siteOriginArg;
+  console.log(`Site URL:   ${SITE_URL}`);
+  console.log(`API Origin: ${API_ORIGIN}`);
 
-  if (!siteOriginArg) {
-    console.error(
-      "Usage: npm run generate-sitemap -- <site-origin> [api-origin]\n" +
-        "Example: npm run generate-sitemap -- https://wardcheck.example.com https://api.wardcheck.example.com",
-    );
-    process.exit(1);
-  }
+  const today = new Date().toISOString().slice(0, 10);
 
-  const siteOrigin = normalizeOrigin(siteOriginArg);
-  const apiOrigin = normalizeOrigin(apiOriginArg);
-
-  const hospitals = await fetchJson<SlugItem[]>(
-    `${apiOrigin}/api/hospitals/search?limit=10000`,
+  const facilities = await fetchJson<FacilitySlugItem[]>(
+    `${API_ORIGIN}/api/sitemap/facilities`,
   );
-  const posts = await fetchJson<SlugItem[]>(`${apiOrigin}/api/blog?limit=10000`);
+  console.log(`Fetched ${facilities.length} facilities`);
 
-  const staticUrls = [
-    "/",
-    "/search",
-    "/report",
-    "/blog",
-    "/about",
-    "/privacy",
-    "/terms",
-    "/contact",
-  ];
+  const staticPages = ["/", "/search", "/about", "/privacy", "/terms", "/contact"];
 
   const urlEntries: string[] = [];
 
-  for (const path of staticUrls) {
-    urlEntries.push(`  <url>\n    <loc>${siteOrigin}${path}</loc>\n  </url>`);
-  }
-
-  for (const hospital of hospitals) {
-    const lastmod = hospital.updatedAt
-      ? `\n    <lastmod>${new Date(hospital.updatedAt).toISOString().slice(0, 10)}</lastmod>`
-      : "";
+  for (const path of staticPages) {
     urlEntries.push(
-      `  <url>\n    <loc>${siteOrigin}/facility/${hospital.slug}</loc>${lastmod}\n  </url>`,
+      `  <url>\n    <loc>${escapeXml(SITE_URL + path)}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`,
     );
   }
 
-  for (const post of posts) {
-    const sourceDate = post.updatedAt ?? post.publishedAt;
-    const lastmod = sourceDate
-      ? `\n    <lastmod>${new Date(sourceDate).toISOString().slice(0, 10)}</lastmod>`
-      : "";
+  for (const facility of facilities) {
+    const lastmod = facility.updatedAt
+      ? new Date(facility.updatedAt).toISOString().slice(0, 10)
+      : today;
     urlEntries.push(
-      `  <url>\n    <loc>${siteOrigin}/blog/${post.slug}</loc>${lastmod}\n  </url>`,
+      `  <url>\n    <loc>${escapeXml(SITE_URL + "/facility/" + facility.slug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`,
     );
   }
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlEntries.join("\n")}\n</urlset>\n`;
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urlEntries,
+    "</urlset>",
+    "",
+  ].join("\n");
 
   const outPath = resolve(import.meta.dirname, "../public/sitemap.xml");
   writeFileSync(outPath, xml, "utf-8");

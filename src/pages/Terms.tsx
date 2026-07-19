@@ -15,7 +15,7 @@ export default function Terms() {
           </p>
           <h2 className="text-xl font-bold text-foreground mt-8 mb-4">Disclaimer of Liability</h2>
           <p>
-            The report counts displayed on WardCheck are aggregated submissions received after moderation. A report count does not constitute proof of wrongdoing, legal liability, or formal judgment against any facility. We provide this data "as is" for informational purposes only.
+            Report counts represent anonymous aggregated submissions and should not be interpreted as findings of misconduct or regulatory action. WardCheck does not determine legal liability or employment compliance.
           </p>
           <h2 className="text-xl font-bold text-foreground mt-8 mb-4">Facility Rights</h2>
           <p>
