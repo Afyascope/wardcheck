@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
-
+import { PageTracker } from "@/components/PageTracker";
 
 import Home from "@/pages/Home";
 import Search from "@/pages/Search";
@@ -123,9 +123,10 @@ function App() {
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <AppRoutes />
+            <PageTracker />
+           <AppRoutes />
             <Toaster />
-          </TooltipProvider>
+            </TooltipProvider>
         </QueryClientProvider>
       </AuthProvider>
     </WouterRouter>
