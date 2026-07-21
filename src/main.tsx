@@ -6,6 +6,9 @@ import './index.css';
 
 import { initializeAnalytics } from './lib/analytics';
 
+import { initializeClarity } from "@/lib/clarity";
+
 initializeAnalytics();
+initializeClarity();
 
 createRoot(document.getElementById('root')!).render(<App />);
