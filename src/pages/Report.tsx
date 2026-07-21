@@ -21,6 +21,7 @@ import { CheckCircle2, Loader2, Building2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ApiError } from "@/api/client";
 import { getBrowserFingerprintHash } from "@/lib/browser-fingerprint";
+import { trackEvent } from "@/lib/analytics";
 
 const formSchema = z.object({
   hospitalId: z.number({ required_error: "Please select a facility." }),
@@ -120,16 +121,25 @@ export default function Report() {
           .catch(() => undefined));
 
       await createReport.mutateAsync({
-        data: {
-          hospitalId: values.hospitalId,
-          jobCategory: values.jobCategory,
-          employmentYear: values.employmentYear,
-          reason: values.reason,
-          email: values.email || undefined,
-        },
-        fingerprintHash: resolvedFingerprintHash,
-      });
-      setIsSuccess(true);
+  data: {
+    hospitalId: values.hospitalId,
+    jobCategory: values.jobCategory,
+    employmentYear: values.employmentYear,
+    reason: values.reason,
+    email: values.email || undefined,
+  },
+  fingerprintHash: resolvedFingerprintHash,
+});
+
+// Send analytics event only after a successful save
+trackEvent("report_submitted", {
+  facility_name: selectedHospital?.facilityName,
+  county: selectedHospital?.county,
+  job_category: values.jobCategory,
+  report_reason: values.reason,
+});
+
+setIsSuccess(true);
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.status === 409) {

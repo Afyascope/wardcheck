@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetBlogPost, getGetBlogPostQueryKey } from "@/hooks/api-client";
 import { useParams, Link } from "wouter";
@@ -12,6 +14,18 @@ export default function BlogPost() {
   const { data: post, isLoading, error } = useGetBlogPost(slug, {
     query: { enabled: !!slug, queryKey: getGetBlogPostQueryKey(slug) },
   });
+  useEffect(() => {
+  if (!post) return;
+
+  trackEvent("blog_post_viewed", {
+    post_id: post.id,
+    title: post.title,
+    category: post.category,
+    slug: post.slug,
+    published_at: post.publishedAt,
+  });
+}, [post]);
+
 
   useSeo({
     title: post ? `${post.seoTitle} | WardCheck Blog` : "Blog | WardCheck",

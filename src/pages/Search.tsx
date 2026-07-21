@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
 import { useSearchHospitals } from "@/hooks/api-client";
@@ -14,6 +16,15 @@ export default function Search() {
     { q, limit: 50 },
     { query: { enabled: !!q, queryKey: ["search-hospitals-page", q] } }
   );
+  useEffect(() => {
+  if (!q || isLoading || !hospitals) return;
+
+  trackEvent("facility_searched", {
+    search_term: q,
+    results_count: hospitals.length,
+    has_results: hospitals.length > 0,
+  });
+}, [q, hospitals, isLoading]);
 
   return (
     <AppLayout>

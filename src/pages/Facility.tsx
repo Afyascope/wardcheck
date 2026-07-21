@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetHospitalBySlug, getGetHospitalBySlugQueryKey } from "@/hooks/api-client";
 import { useParams, Link } from "wouter";
@@ -6,12 +8,26 @@ import { Building2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useSeo } from "@/hooks/use-seo";
 
+
 export default function Facility() {
   const params = useParams();
   const slug = params.slug ?? "";
   const { data: facility, isLoading, error } = useGetHospitalBySlug(slug, {
     query: { enabled: !!slug, queryKey: getGetHospitalBySlugQueryKey(slug) },
   });
+  
+  useEffect(() => {
+  if (!facility) return;
+
+  trackEvent("facility_viewed", {
+    facility_id: facility.id,
+    facility_name: facility.facilityName,
+    county: facility.county,
+    ownership: facility.ownership,
+    level: facility.level,
+    reports_received: facility.reportsReceived,
+  });
+}, [facility]);
 
   useSeo({
     title: facility
