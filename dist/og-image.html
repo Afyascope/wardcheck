@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1200" />
+  <title>WardCheck OG Image</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --blue-600: #2563EB;
+      --blue-700: #1D4ED8;
+      --blue-800: #1E40AF;
+      --teal-600: #0D9488;
+      --teal-700: #0F766E;
+      --teal-800: #115E59;
+      --navy-900: #0F172A;
+      --slate-800: #1E293B;
+      --slate-700: #334155;
+      --slate-500: #64748B;
+      --slate-400: #94A3B8;
+      --slate-200: #E2E8F0;
+      --white: #FFFFFF;
+      --white-90: rgba(255,255,255,0.9);
+      --white-70: rgba(255,255,255,0.7);
+      --white-20: rgba(255,255,255,0.2);
+      --white-10: rgba(255,255,255,0.1);
+      --white-05: rgba(255,255,255,0.05);
+      --red-400: #F87171;
+      --red-500: #EF4444;
+      --red-100: #FEE2E2;
+    }
+
+    body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .canvas {
+      width: 1200px;
+      height: 630px;
+      position: relative;
+      background: linear-gradient(145deg, #1a3a8a 0%, #15507a 35%, #0f6b63 65%, #0a5c56 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 48px 56px 40px;
+      color: var(--white);
+    }
+
+    /* Subtle noise/texture overlay */
+    .canvas::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 800px 400px at 15% 20%, rgba(37,99,235,0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 350px at 85% 75%, rgba(13,148,136,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .canvas > * { position: relative; z-index: 1; }
+
+    /* ── Header Row ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .shield-logo {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-name {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--white-70);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Facility Name ── */
+    .facility-name {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--white);
+      margin-bottom: 10px;
+      max-width: 800px;
+    }
+
+    /* ── Facility Meta ── */
+    .facility-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--white-70);
+      margin-bottom: 28px;
+    }
+
+    .meta-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--white-20);
+      flex-shrink: 0;
+    }
+
+    .meta-label {
+      color: var(--white-70);
+    }
+
+    .meta-value {
+      color: var(--white-90);
+      font-weight: 600;
+    }
+
+    /* ── Content Grid ── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 4px 24px rgba(0,0,0,0.08),
+        0 1px 3px rgba(0,0,0,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--white-70);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label .icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+    }
+
+    /* ── Reports Card ── */
+    .reports-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .report-count {
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--white);
+      margin-bottom: 6px;
+    }
+
+    .report-count-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--white-70);
+    }
+
+    .report-highlight {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--white-10);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--white-70);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .report-highlight .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--red-400);
+      flex-shrink: 0;
+    }
+
+    /* ── Concerns Card ── */
+    .concerns-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .concern-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white-90);
+      line-height: 1.4;
+    }
+
+    .concern-bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal-600);
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+
+    .concern-item:nth-child(1) .concern-bullet { background: var(--red-400); }
+    .concern-item:nth-child(2) .concern-bullet { background: rgba(255,255,255,0.5); }
+    .concern-item:nth-child(3) .concern-bullet { background: rgba(255,255,255,0.3); }
+
+    .concern-rank {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--white-20);
+      min-width: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--white-10);
+    }
+
+    .footer-cta {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white-70);
+      letter-spacing: -0.01em;
+    }
+
+    .footer-cta em {
+      font-style: normal;
+      color: var(--white-90);
+    }
+
+    .footer-domain {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white-90);
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-domain .lock-icon {
+      width: 14px;
+      height: 14px;
+      opacity: 0.6;
+    }
+
+    /* ── Subtle grid pattern ── */
+    .grid-pattern {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="grid-pattern"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <svg class="shield-logo" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="shieldGrad" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#3B82F6"/>
+            <stop offset="100%" stop-color="#0D9488"/>
+          </linearGradient>
+        </defs>
+        <path d="M26 2L6 12v14c0 12.5 8.6 24.2 20 26.8C37.4 50.2 46 38.5 46 26V12L26 2z" fill="url(#shieldGrad)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+        <path d="M26 6L10 14v12c0 10.8 7.4 20.9 16 23.2C34.6 46.9 42 36.8 42 26V14L26 6z" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+        <text x="26" y="30" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="20" fill="white">W</text>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-name">WardCheck</div>
+        <div class="brand-tagline">Healthcare Workplace Transparency</div>
+      </div>
+    </div>
+
+    <!-- Facility Name -->
+    <div class="facility-name">Kenyatta National Hospital</div>
+
+    <!-- Facility Meta -->
+    <div class="facility-meta">
+      <span class="meta-label">County</span>
+      <span class="meta-value">Nairobi</span>
+      <span class="meta-dot"></span>
+      <span class="meta-label">Ownership</span>
+      <span class="meta-value">Public</span>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+      <!-- Reports Card -->
+      <div class="card reports-card">
+        <div class="card-label">
+          <svg class="icon" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.333L2 4v3.333c0 4.167 2.567 8.067 6 9.334 3.434-1.267 6-5.167 6-9.334V4L8 1.333z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 8l2 2 3.5-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Anonymous Workplace Reports
+        </div>
+        <div class="report-count">47</div>
+        <div class="report-count-label">reports submitted</div>
+        <div class="report-highlight">
+          <span class="dot"></span>
+          All submissions are anonymous and verified
+        </div>
+      </div>
+
+      <!-- Concerns Card -->
+      <div class="card">
+        <div class="card-label">
+          <svg class="icon" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1.5l6.5 3v4c0 3.5-2.7 6.8-6.5 7.5C4.2 15.3 1.5 12 1.5 8.5v-4L8 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Most Reported Workplace Concern
+        </div>
+        <ul class="concerns-list">
+          <li class="concern-item">
+            <span class="concern-bullet"></span>
+            <span>Inadequate staffing levels</span>
+          </li>
+          <li class="concern-item">
+            <span class="concern-bullet"></span>
+            <span>Delayed salary payments</span>
+          </li>
+          <li class="concern-item">
+            <span class="concern-bullet"></span>
+            <span>Poor workplace safety</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-cta">Know <em>your</em> next employer</div>
+      <div class="footer-domain">
+        <svg class="lock-icon" viewBox="0 0 14 14" fill="none">
+          <rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M4.5 6V4.5a2.5 2.5 0 015 0V6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        wardcheck.co.ke
+      </div>
+    </div>
+  </div>
+</body>
+</html>
