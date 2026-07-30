@@ -18,7 +18,7 @@ export default function AdminReports() {
   });
 
   const [statusFilter, setStatusFilter] = useState<ReportStatusValue | "all">("pending");
-  const { data: reports, isLoading } = useListAdminReports({ status: statusFilter === "all" ? undefined : statusFilter, limit: 100 });
+  const { data: reports, isLoading } = useListAdminReports({ status: statusFilter === "all" ? undefined : statusFilter, pageSize: 100 });
   const approve = useApproveReport();
   const reject = useRejectReport();
 

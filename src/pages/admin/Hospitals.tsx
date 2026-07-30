@@ -20,7 +20,7 @@ export default function AdminHospitals() {
   });
 
   const [search, setSearch] = useState("");
-  const { data: hospitals, isLoading } = useListAdminHospitals({ q: search || undefined, limit: 100 });
+  const { data: hospitals, isLoading } = useListAdminHospitals({ q: search || undefined, pageSize: 100 });
 
   /* ─── Create / Edit dialog ─── */
   const [dialogOpen, setDialogOpen] = useState(false);

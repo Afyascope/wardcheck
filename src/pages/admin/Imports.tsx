@@ -23,7 +23,7 @@ export default function AdminImports() {
     robots: "noindex,nofollow",
   });
 
-  const { data: history, isLoading } = useListImportHistory({ limit: 50 });
+  const { data: history, isLoading } = useListImportHistory({ pageSize: 50 });
   const startSync = useStartKmpdcSync();
   const retryImport = useRetryKmpdcImport();
 
