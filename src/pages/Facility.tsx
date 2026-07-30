@@ -129,6 +129,12 @@ export default function Facility() {
                 <div className="text-base font-semibold text-muted-foreground uppercase tracking-wider">
                   Report{facility.reportsReceived !== 1 ? "s" : ""} Received
                 </div>
+                {facility.mostCommonConcern && (
+                  <div className="mt-3 flex items-center gap-2 text-destructive font-medium text-sm">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{facility.mostCommonConcern}</span>
+                  </div>
+                )}
               </div>
 
               <div className="p-8">

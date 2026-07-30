@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchHospitals } from "@/hooks/api-client";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getReportBadgeClasses } from "@/lib/utils";
 
 export function SearchBox() {
   const [, setLocation] = useLocation();
@@ -72,8 +73,11 @@ export function SearchBox() {
                     }}
                   >
                     <div className="font-semibold text-foreground">{h.facilityName}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {h.county} County • {h.level} • {h.reportsReceived} reports
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span>{h.county} County • {h.level}</span>
+                      <span className={getReportBadgeClasses(h.reportsReceived)}>
+                        {h.reportsReceived} report{h.reportsReceived !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </button>
                 </li>

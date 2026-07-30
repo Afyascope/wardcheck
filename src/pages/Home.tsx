@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, AlertTriangle, FileText, ShieldCheck } from "lucide-react";
 import { useSeo, ORGANIZATION_SCHEMA, WEBSITE_SCHEMA, SITE_URL } from "@/hooks/use-seo";
+import { getReportBadgeClasses } from "@/lib/utils";
 
 export default function Home() {
   const { data: stats } = useGetNationalStats();
@@ -101,8 +102,8 @@ export default function Home() {
                         <div className="text-sm text-muted-foreground mt-1">
                           {facility.county} County • {facility.level}
                         </div>
-                        <div className="mt-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
-                          {facility.reportsReceived} reports
+                        <div className={`mt-3 ${getReportBadgeClasses(facility.reportsReceived)}`}>
+                          {facility.reportsReceived} report{facility.reportsReceived > 1 ? 's' : ''}
                         </div>
                       </div>
                     </Link>

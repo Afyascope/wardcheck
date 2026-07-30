@@ -5,8 +5,9 @@ import { SearchBox } from "@/components/SearchBox";
 import { useSearchHospitals } from "@/hooks/api-client";
 import { useSearch, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
-import { Building2, AlertTriangle, FileText, ChevronRight } from "lucide-react";
+import { Building2, AlertTriangle, ChevronRight } from "lucide-react";
 import { useSeo } from "@/hooks/use-seo";
+import { getReportBadgeClasses } from "@/lib/utils";
 
 export default function Search() {
   const searchString = useSearch();
@@ -76,14 +77,9 @@ export default function Search() {
                   </div>
                   
                   <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0">
-                    <div className="flex flex-col md:items-end">
-                      <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${facility.reportsReceived > 0 ? 'bg-destructive/10 text-destructive' : 'bg-green-100 text-green-700'}`}>
-                        {facility.reportsReceived === 0 ? "0 reports" : `${facility.reportsReceived} report${facility.reportsReceived > 1 ? 's' : ''}`}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {facility.reportsReceived === 0 ? "No workplace reports submitted" : "Workplace reports received"}
-                      </div>
-                    </div>
+                    <span className={getReportBadgeClasses(facility.reportsReceived)}>
+                      {facility.reportsReceived === 0 ? "0 reports" : `${facility.reportsReceived} report${facility.reportsReceived > 1 ? 's' : ''}`}
+                    </span>
                     <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </div>
