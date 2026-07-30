@@ -1,6 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function Contact() {
+  useSeo({
+    title: "Contact Us | WardCheck",
+    description:
+      "Contact WardCheck support for questions, feedback, or facility correction requests. Email us at support@wardcheck.co.ke.",
+    path: "/contact",
+  });
+
   return (
     <AppLayout>
       <div className="flex-1 max-w-3xl mx-auto px-4 py-16 w-full">

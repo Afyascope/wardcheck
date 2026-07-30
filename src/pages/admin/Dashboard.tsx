@@ -3,9 +3,17 @@ import { useGetAdminStats } from "@/hooks/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, AlertTriangle, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
 import { FullPageLoader } from "@/components/ui/loaders";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useGetAdminStats();
+
+  useSeo({
+    title: "Admin Dashboard | WardCheck",
+    description: "WardCheck admin dashboard.",
+    path: "/admin",
+    robots: "noindex,nofollow",
+  });
 
   if (isLoading) return <FullPageLoader />;
 

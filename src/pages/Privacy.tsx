@@ -1,6 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function Privacy() {
+  useSeo({
+    title: "Privacy Policy | WardCheck",
+    description:
+      "WardCheck privacy policy. Learn how we collect, use, and protect your information when using our healthcare workplace transparency platform.",
+    path: "/privacy",
+  });
+
   return (
     <AppLayout>
       <div className="flex-1 max-w-3xl mx-auto px-4 py-16 w-full">

@@ -1,18 +1,8 @@
-/**
- * Generates a production-ready static sitemap.xml for the WardCheck SPA.
- *
- * Environment variables (read from .env file or shell):
- *   SITE_URL   – production site origin used in <loc> URLs (default: https://wardcheck.co.ke)
- *   API_ORIGIN – backend API origin used only for fetching facility data (default: http://localhost:3001)
- *
- * Usage:
- *   npm run generate-sitemap
- */
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const SITE_URL = (
-  process.env.SITE_URL || "https://wardcheck.co.ke"
+  process.env.SITE_URL || "https://www.wardcheck.co.ke"
 ).replace(/\/$/, "");
 
 const API_ORIGIN = (
@@ -55,22 +45,28 @@ async function main() {
   );
   console.log(`Fetched ${facilities.length} facilities`);
 
-  const staticPages = ["/", "/search", "/about", "/privacy", "/terms", "/contact"];
-
   const urlEntries: string[] = [];
 
+  // Homepage — priority 1.0, weekly
+  urlEntries.push(
+    `  <url>\n    <loc>${escapeXml(SITE_URL + "/")}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>`,
+  );
+
+  // Static pages — priority 0.7, monthly
+  const staticPages = ["/about", "/privacy", "/terms", "/contact"];
   for (const path of staticPages) {
     urlEntries.push(
-      `  <url>\n    <loc>${escapeXml(SITE_URL + path)}</loc>\n    <lastmod>${today}</lastmod>\n  </url>`,
+      `  <url>\n    <loc>${escapeXml(SITE_URL + path)}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>`,
     );
   }
 
+  // Facility pages — priority 0.8, weekly
   for (const facility of facilities) {
     const lastmod = facility.updatedAt
       ? new Date(facility.updatedAt).toISOString().slice(0, 10)
       : today;
     urlEntries.push(
-      `  <url>\n    <loc>${escapeXml(SITE_URL + "/facility/" + facility.slug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`,
+      `  <url>\n    <loc>${escapeXml(SITE_URL + "/facility/" + facility.slug)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`,
     );
   }
 

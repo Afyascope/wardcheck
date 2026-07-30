@@ -1,5 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "wardcheck.co.ke" }],
+      "destination": "https://www.wardcheck.co.ke/:match",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

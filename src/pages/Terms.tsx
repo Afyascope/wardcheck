@@ -1,6 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function Terms() {
+  useSeo({
+    title: "Terms of Use | WardCheck",
+    description:
+      "WardCheck terms of use. By accessing our healthcare workplace transparency platform, you agree to these terms governing use of the service.",
+    path: "/terms",
+  });
+
   return (
     <AppLayout>
       <div className="flex-1 max-w-3xl mx-auto px-4 py-16 w-full">

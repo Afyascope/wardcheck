@@ -4,159 +4,90 @@ import { useListAdminReports, useApproveReport, useRejectReport, ReportStatus } 
 import type { ReportStatusValue } from "@/hooks/api-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Download, Check, X } from "lucide-react";
-import { format } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
-import { buildApiUrl } from "@/api/client";
-import { getStoredToken } from "@/contexts/AuthContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSeo } from "@/hooks/use-seo";
+import { FullPageLoader } from "@/components/ui/loaders";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 export default function AdminReports() {
-  const [status, setStatus] = useState<ReportStatusValue | undefined>(ReportStatus.pending);
-  const [page, setPage] = useState(1);
-  const queryClient = useQueryClient();
+  useSeo({
+    title: "Manage Reports | WardCheck Admin",
+    description: "WardCheck admin reports management.",
+    path: "/admin/reports",
+    robots: "noindex,nofollow",
+  });
 
-  const { data: pageData, isLoading } = useListAdminReports(
-    { status, page, pageSize: 20 },
-    { query: { queryKey: ["admin-reports", status, page] } }
-  );
-
-  const approveMutation = useApproveReport();
-  const rejectMutation = useRejectReport();
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
-    queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-  };
-
-  const handleExport = async () => {
-    const token = getStoredToken();
-    const url = buildApiUrl("/api/admin/reports/export");
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const response = await fetch(url, { headers, credentials: "same-origin" });
-    if (!response.ok) return;
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = "wardcheck-reports.csv";
-    a.click();
-    URL.revokeObjectURL(blobUrl);
-  };
+  const [statusFilter, setStatusFilter] = useState<ReportStatusValue | "all">("pending");
+  const { data: reports, isLoading } = useListAdminReports({ status: statusFilter === "all" ? undefined : statusFilter, limit: 100 });
+  const approve = useApproveReport();
+  const reject = useRejectReport();
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-foreground">Reports</h1>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ReportStatusValue | "all")}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="bg-white border rounded-xl shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b bg-muted/5 flex items-center justify-between">
-          <Tabs 
-            value={status === undefined ? "all" : status} 
-            onValueChange={(v) => { setStatus(v === "all" ? undefined : v as ReportStatusValue); setPage(1); }}
-          >
-            <TabsList>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="rejected">Rejected</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div className="text-sm text-muted-foreground">
-            {pageData ? `Showing ${pageData.items.length} of ${pageData.total}` : ""}
-          </div>
-        </div>
-
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Facility</TableHead>
-              <TableHead>Issue</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
-            ) : pageData?.items.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No reports found.</TableCell></TableRow>
-            ) : (
-              pageData?.items.map(r => (
+      {isLoading ? (
+        <FullPageLoader />
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Facility</TableHead>
+                <TableHead>County</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead>Reason</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reports?.items.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                    {format(new Date(r.submittedAt), "MMM d, yyyy")}
-                  </TableCell>
+                  <TableCell className="font-medium">{r.facilityName}</TableCell>
+                  <TableCell>{r.county}</TableCell>
+                  <TableCell>{r.jobCategory}</TableCell>
+                  <TableCell>{r.employmentYear}</TableCell>
+                  <TableCell>{r.reason}</TableCell>
                   <TableCell>
-                    <div className="font-medium text-foreground">{r.facilityName}</div>
-                    <div className="text-xs text-muted-foreground">{r.county}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-medium">{r.reason}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">{r.jobCategory} ({r.employmentYear})</div>
-                    {r.email && <div className="text-xs text-muted-foreground">{r.email}</div>}
-                    {r.suspiciousSubmission && (
-                      <div className="mt-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                        Suspicious
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize
-                      ${r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      ${r.status === 'approved' ? 'bg-green-100 text-green-800' : ''}
-                      ${r.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
-                    `}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      r.status === "approved" ? "bg-green-100 text-green-700" :
+                      r.status === "rejected" ? "bg-destructive/10 text-destructive" :
+                      "bg-amber-100 text-amber-700"
+                    }`}>
                       {r.status}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right whitespace-nowrap">
-                    {r.status === 'pending' && (
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => approveMutation.mutate({ id: r.id }, { onSuccess: () => invalidate() })}
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
-                        >
-                          <Check className="w-4 h-4 mr-1" /> Approve
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => rejectMutation.mutate({ id: r.id }, { onSuccess: () => invalidate() })}
-                          disabled={approveMutation.isPending || rejectMutation.isPending}
-                        >
-                          <X className="w-4 h-4 mr-1" /> Reject
-                        </Button>
-                      </div>
-                    )}
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" className="text-green-600" onClick={() => approve.mutate({ id: r.id })} disabled={r.status !== "pending"}>
+                        <CheckCircle2 className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-destructive" onClick={() => reject.mutate({ id: r.id })} disabled={r.status !== "pending"}>
+                        <XCircle className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        {pageData && pageData.total > pageData.pageSize && (
-          <div className="p-4 border-t flex justify-end gap-2 bg-muted/5">
-            <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-            <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page * pageData.pageSize >= pageData.total}>Next</Button>
-          </div>
-        )}
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </AdminLayout>
   );
 }

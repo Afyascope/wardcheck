@@ -22,6 +22,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { ApiError } from "@/api/client";
 import { getBrowserFingerprintHash } from "@/lib/browser-fingerprint";
 import { trackEvent } from "@/lib/analytics";
+import { useSeo } from "@/hooks/use-seo";
 
 const formSchema = z.object({
   hospitalId: z.number({ required_error: "Please select a facility." }),
@@ -63,6 +64,13 @@ export default function Report() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [fingerprintHash, setFingerprintHash] = useState<string | undefined>();
   const createReport = useCreateReport();
+
+  useSeo({
+    title: "Report a Healthcare Facility | WardCheck",
+    description:
+      "Submit an anonymous workplace report about your experience at a Kenyan healthcare facility. Your identity is protected.",
+    path: "/report",
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +139,6 @@ export default function Report() {
   fingerprintHash: resolvedFingerprintHash,
 });
 
-// Send analytics event only after a successful save
 trackEvent("report_submitted", {
   facility_name: selectedHospital?.facilityName,
   county: selectedHospital?.county,

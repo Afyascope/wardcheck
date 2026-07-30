@@ -6,6 +6,7 @@ import { useSearchHospitals } from "@/hooks/api-client";
 import { useSearch, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, FileText, ChevronRight } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function Search() {
   const searchString = useSearch();
@@ -16,15 +17,25 @@ export default function Search() {
     { q, limit: 50 },
     { query: { enabled: !!q, queryKey: ["search-hospitals-page", q] } }
   );
-  useEffect(() => {
-  if (!q || isLoading || !hospitals) return;
 
-  trackEvent("facility_searched", {
-    search_term: q,
-    results_count: hospitals.length,
-    has_results: hospitals.length > 0,
+  useSeo({
+    title: q
+      ? `"${q}" — Search Healthcare Facilities | WardCheck`
+      : "Search Healthcare Facilities | WardCheck",
+    description:
+      "Search Kenya's registered healthcare facilities by name, county, or type. Find workplace transparency data before choosing your next employer.",
+    path: "/search",
   });
-}, [q, hospitals, isLoading]);
+
+  useEffect(() => {
+    if (!q || isLoading || !hospitals) return;
+
+    trackEvent("facility_searched", {
+      search_term: q,
+      results_count: hospitals.length,
+      has_results: hospitals.length > 0,
+    });
+  }, [q, hospitals, isLoading]);
 
   return (
     <AppLayout>

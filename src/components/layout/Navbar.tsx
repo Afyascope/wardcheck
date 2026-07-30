@@ -12,9 +12,6 @@ export function Navbar() {
           <span className="font-bold text-xl tracking-tight text-foreground">WardCheck</span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/blog" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
-            Blog
-          </Link>
           <Button asChild variant="outline" className="font-semibold">
             <Link href="/report">Report a facility</Link>
           </Button>

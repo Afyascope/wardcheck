@@ -1,6 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function About() {
+  useSeo({
+    title: "About WardCheck | Healthcare Workplace Transparency in Kenya",
+    description:
+      "WardCheck is Kenya's healthcare workplace transparency platform. Anonymous reports, objective data, informed career decisions for medical professionals.",
+    path: "/about",
+  });
+
   return (
     <AppLayout>
       <div className="flex-1 max-w-3xl mx-auto px-4 py-16 w-full">

@@ -6,8 +6,12 @@ import { useParams, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
-import { useSeo } from "@/hooks/use-seo";
-
+import {
+  useSeo,
+  ORGANIZATION_SCHEMA,
+  createBreadcrumbSchema,
+  SITE_URL,
+} from "@/hooks/use-seo";
 
 export default function Facility() {
   const params = useParams();
@@ -15,41 +19,68 @@ export default function Facility() {
   const { data: facility, isLoading, error } = useGetHospitalBySlug(slug, {
     query: { enabled: !!slug, queryKey: getGetHospitalBySlugQueryKey(slug) },
   });
-  
-  useEffect(() => {
-  if (!facility) return;
 
-  trackEvent("facility_viewed", {
-    facility_id: facility.id,
-    facility_name: facility.facilityName,
-    county: facility.county,
-    ownership: facility.ownership,
-    level: facility.level,
-    reports_received: facility.reportsReceived,
-  });
-}, [facility]);
+  useEffect(() => {
+    if (!facility) return;
+
+    trackEvent("facility_viewed", {
+      facility_id: facility.id,
+      facility_name: facility.facilityName,
+      county: facility.county,
+      ownership: facility.ownership,
+      level: facility.level,
+      reports_received: facility.reportsReceived,
+    });
+  }, [facility]);
+
+  const facilityJsonLd = facility
+    ? {
+        "@type": "MedicalOrganization",
+        name: facility.facilityName,
+        address: {
+          "@type": "PostalAddress",
+          addressRegion: facility.county,
+          addressCountry: "KE",
+        },
+        url: `${SITE_URL}/facility/${slug}`,
+        ...(facility.reportsReceived > 0
+          ? {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingCount: facility.reportsReceived,
+                bestRating: 1,
+                worstRating: 1,
+                ratingValue: 1,
+                description: "Workplace reports received",
+              },
+            }
+          : {}),
+      }
+    : null;
+
+  const breadcrumbJsonLd = facility
+    ? createBreadcrumbSchema([
+        { name: "Home", path: "/" },
+        { name: "Facilities", path: "/search" },
+        { name: facility.facilityName, path: `/facility/${slug}` },
+      ])
+    : null;
+
+  const jsonLd = [ORGANIZATION_SCHEMA, breadcrumbJsonLd, facilityJsonLd].filter(
+    Boolean,
+  ) as Record<string, unknown>[];
 
   useSeo({
     title: facility
-      ? `${facility.facilityName} — Workplace Reports | WardCheck`
+      ? `${facility.facilityName} Reviews, Workplace Reports | WardCheck`
       : "Facility | WardCheck",
     description: facility
-      ? `See workplace transparency data for ${facility.facilityName} in ${facility.county} County: reports received and the most common workplace concern, sourced from healthcare workers.`
+      ? `Anonymous workplace reports, staff experiences, location, ownership and employment insights for ${facility.facilityName} in ${facility.county} County, Kenya.`
       : "Facility workplace transparency data on WardCheck.",
     path: `/facility/${slug}`,
+    canonicalUrl: `${SITE_URL}/facility/${slug}`,
     type: "article",
-    jsonLd: facility
-      ? {
-          "@context": "https://schema.org",
-          "@type": "MedicalOrganization",
-          name: facility.facilityName,
-          address: {
-            "@type": "PostalAddress",
-            addressRegion: facility.county,
-            addressCountry: "KE",
-          },
-        }
-      : undefined,
+    jsonLd,
   });
 
   return (
@@ -91,7 +122,6 @@ export default function Facility() {
                 </div>
               </div>
 
-              {/* Reports Received is the primary visual element on this page. */}
               <div className="p-8 border-b flex flex-col items-center text-center bg-gradient-to-b from-muted/10 to-transparent">
                 <div className={`text-7xl font-black mb-2 leading-none ${facility.reportsReceived > 0 ? "text-destructive" : "text-green-600"}`}>
                   {facility.reportsReceived}

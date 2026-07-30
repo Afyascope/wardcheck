@@ -5,16 +5,19 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, AlertTriangle, FileText, ShieldCheck } from "lucide-react";
-import { useSeo } from "@/hooks/use-seo";
+import { useSeo, ORGANIZATION_SCHEMA, WEBSITE_SCHEMA, SITE_URL } from "@/hooks/use-seo";
 
 export default function Home() {
   const { data: stats } = useGetNationalStats();
 
   useSeo({
-    title: "WardCheck — Know Your Next Employer",
+    title: "WardCheck — Know Your Next Employer | Kenya Hospital Reviews & Workplace Transparency",
     description:
-      "Search Kenyan health facilities for workplace transparency data. See reports on unpaid wages, delayed salaries, and harsh working conditions before you take a job.",
+      "Search Kenya hospitals and healthcare employers. Anonymous workplace reviews, staff experiences, and employment insights. Make informed career decisions with WardCheck.",
     path: "/",
+    keywords:
+      "Kenya hospitals, healthcare employers Kenya, hospital reviews Kenya, anonymous workplace reviews, medical jobs Kenya, healthcare transparency Kenya",
+    jsonLd: [ORGANIZATION_SCHEMA, WEBSITE_SCHEMA],
   });
 
   return (
@@ -110,47 +113,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Disclaimer Section */}
         {/* Transparency & Disclaimer */}
-<section className="py-12 px-4 border-t bg-muted/20">
-  <div className="max-w-4xl mx-auto">
-    <div className="p-6 bg-white border border-border/50 rounded-xl shadow-sm">
-      <h2 className="text-lg font-semibold text-foreground mb-4">
-        Transparency & Disclaimer
-      </h2>
+        <section className="py-12 px-4 border-t bg-muted/20">
+          <div className="max-w-4xl mx-auto">
+            <div className="p-6 bg-white border border-border/50 rounded-xl shadow-sm">
+              <h2 className="text-lg font-semibold text-foreground mb-4">
+                Transparency & Disclaimer
+              </h2>
 
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        WardCheck is an <strong className="text-foreground">independent healthcare workplace transparency platform</strong> designed to help healthcare professionals make informed career decisions through objective, aggregated workplace data.
-      </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                WardCheck is an <strong className="text-foreground">independent healthcare workplace transparency platform</strong> designed to help healthcare professionals make informed career decisions through objective, aggregated workplace data.
+              </p>
 
-      <ul className="space-y-3 text-sm text-muted-foreground leading-relaxed list-disc pl-5">
-        <li>
-          <strong className="text-foreground">Official Facility Information:</strong> Facility names, ownership, levels, counties, and registration details are sourced from the official Kenya Medical Practitioners and Dentists Council (KMPDC) public register.
-        </li>
+              <ul className="space-y-3 text-sm text-muted-foreground leading-relaxed list-disc pl-5">
+                <li>
+                  <strong className="text-foreground">Official Facility Information:</strong> Facility names, ownership, levels, counties, and registration details are sourced from the official Kenya Medical Practitioners and Dentists Council (KMPDC) public register.
+                </li>
 
-        <li>
-          <strong className="text-foreground">Moderated Reporting:</strong> Workplace reports are submitted by healthcare workers and other individuals and undergo moderation before contributing to publicly displayed statistics.
-        </li>
+                <li>
+                  <strong className="text-foreground">Moderated Reporting:</strong> Workplace reports are submitted by healthcare workers and other individuals and undergo moderation before contributing to publicly displayed statistics.
+                </li>
 
-        <li>
-          <strong className="text-foreground">Aggregated Statistics Only:</strong> WardCheck does not publish comments, ratings, personal opinions, or reporter identities. Only aggregated report counts and common workplace concerns are displayed.
-        </li>
+                <li>
+                  <strong className="text-foreground">Aggregated Statistics Only:</strong> WardCheck does not publish comments, ratings, personal opinions, or reporter identities. Only aggregated report counts and common workplace concerns are displayed.
+                </li>
 
-        <li>
-          <strong className="text-foreground">No Finding of Wrongdoing:</strong> Report counts and workplace concern summaries do not constitute proof of misconduct, regulatory action, legal liability, or findings of fact. They are intended solely to provide additional context when evaluating workplaces.
-        </li>
+                <li>
+                  <strong className="text-foreground">No Finding of Wrongdoing:</strong> Report counts and workplace concern summaries do not constitute proof of misconduct, regulatory action, legal liability, or findings of fact. They are intended solely to provide additional context when evaluating workplaces.
+                </li>
 
-        <li>
-          <strong className="text-foreground">Independent Platform:</strong> WardCheck does not independently investigate or verify the underlying claims contained in individual reports beyond its moderation and validation process.
-        </li>
+                <li>
+                  <strong className="text-foreground">Independent Platform:</strong> WardCheck does not independently investigate or verify the underlying claims contained in individual reports beyond its moderation and validation process.
+                </li>
 
-        <li>
-          <strong className="text-foreground">Correction Requests:</strong> Registered health facilities that believe information displayed is inaccurate or outdated may request a review or correction by contacting our support team. Verified corrections will be reflected on the platform where appropriate.
-        </li>
-      </ul>
-    </div>
-  </div>
-</section>
+                <li>
+                  <strong className="text-foreground">Correction Requests:</strong> Registered health facilities that believe information displayed is inaccurate or outdated may request a review or correction by contacting our support team. Verified corrections will be reflected on the platform where appropriate.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </div>
     </AppLayout>
   );

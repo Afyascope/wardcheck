@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://wardcheck.co.ke/sitemap.xml
+Disallow: /admin
+Disallow: /blog
+Disallow: /search
+
+Sitemap: https://www.wardcheck.co.ke/sitemap.xml

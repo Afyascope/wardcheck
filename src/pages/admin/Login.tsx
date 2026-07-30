@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { useSeo } from "@/hooks/use-seo";
 
 export default function Login() {
   const { login, isAuthenticated } = useAuth();
@@ -13,6 +14,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useSeo({
+    title: "Admin Sign In | WardCheck",
+    description: "WardCheck admin dashboard sign in.",
+    path: "/admin/login",
+    robots: "noindex,nofollow",
+  });
 
   if (isAuthenticated) {
     setLocation("/admin");
