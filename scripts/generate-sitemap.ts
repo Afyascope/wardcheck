@@ -6,7 +6,7 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 
 const API_ORIGIN = (
-  process.env.API_ORIGIN || "http://localhost:3001"
+  process.env.API_ORIGIN || "https://wardcheck-production.up.railway.app"
 ).replace(/\/$/, "");
 
 type FacilitySlugItem = {
