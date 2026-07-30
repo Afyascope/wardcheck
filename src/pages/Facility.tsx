@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useGetHospitalBySlug, getGetHospitalBySlugQueryKey } from "@/hooks/api-client";
 import { useParams, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
-import { Building2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Building2, AlertTriangle, ArrowLeft, Flag } from "lucide-react";
 import { format } from "date-fns";
 import {
   useSeo,
@@ -160,9 +160,18 @@ export default function Facility() {
                   <div>
                     Last updated: {facility.lastUpdated ? format(new Date(facility.lastUpdated), "MMMM d, yyyy") : format(new Date(facility.createdAt), "MMMM d, yyyy")}
                   </div>
-                  <Link href={`/report?hospitalId=${facility.id}`} className="text-primary font-medium hover:underline">
-                    Report this facility
-                  </Link>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/report?hospitalId=${facility.id}`}
+                      className="inline-flex items-center justify-center rounded-lg bg-destructive px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-destructive/90 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+                    >
+                      <Flag className="mr-2 h-4 w-4" />
+                      Report this facility
+                    </Link>
+                    <span className="text-xs text-muted-foreground">
+                      Anonymous • Takes less than 2 minutes
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
