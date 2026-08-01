@@ -45,7 +45,16 @@ export interface HospitalSearchResult {
   reportsReceived: number;
 }
 
-export interface ReportedFacility {
+export const FACILITY_SORT_VALUES = [
+  "alphabetical",
+  "most-reports",
+  "newest",
+  "recently-updated",
+] as const;
+
+export type FacilitySortValue = (typeof FACILITY_SORT_VALUES)[number];
+
+export interface FacilityDirectoryItem {
   id: number;
   slug: string;
   facilityName: string;
@@ -55,6 +64,21 @@ export interface ReportedFacility {
   reportsReceived: number;
   mostCommonConcern?: string | null;
   lastUpdated?: string | null;
+  createdAt: string;
+}
+
+export interface PaginatedFacilityResponse {
+  items: FacilityDirectoryItem[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface FacilityFilters {
+  counties: string[];
+  ownerships: string[];
+  levels: string[];
 }
 
 export interface HospitalDetail extends HospitalSearchResult {

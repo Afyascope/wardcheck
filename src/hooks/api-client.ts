@@ -2,7 +2,11 @@ export { useSearchHospitals } from "@/hooks/useSearchHospitals";
 export { useGetHospitalBySlug, getGetHospitalBySlugQueryKey } from "@/hooks/useGetHospitalBySlug";
 export { useGetHospital, getGetHospitalQueryKey } from "@/hooks/useGetHospital";
 export { useGetNationalStats } from "@/hooks/useGetNationalStats";
-export { useReportedFacilities, getReportedFacilitiesQueryKey } from "@/hooks/useReportedFacilities";
+export {
+  useFacilitiesDirectory,
+  getFacilitiesDirectoryQueryKey,
+} from "@/hooks/useFacilitiesDirectory";
+export { useFacilityFilters, getFacilityFiltersQueryKey } from "@/hooks/useFacilityFilters";
 export { useCreateReport } from "@/hooks/useReport";
 export { useListBlogPosts } from "@/hooks/useListBlogPosts";
 export { useGetBlogPost, getGetBlogPostQueryKey } from "@/hooks/useGetBlogPost";

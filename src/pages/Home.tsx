@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Building2, AlertTriangle, FileText, Flag, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Building2, AlertTriangle, FileText, Flag, ShieldCheck, ArrowRight, type LucideIcon } from "lucide-react";
 import { useSeo, ORGANIZATION_SCHEMA, WEBSITE_SCHEMA, SITE_URL } from "@/hooks/use-seo";
 import { cn, getReportBadgeClasses } from "@/lib/utils";
 
@@ -38,7 +38,7 @@ function StatCard({
       <TooltipTrigger asChild>
         <Link
           href={href}
-          className="block h-full rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="group block h-full rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           onKeyDown={(e) => {
             if (e.key === " ") {
               e.preventDefault();
@@ -48,7 +48,7 @@ function StatCard({
         >
           <Card
             className={cn(
-              "h-full cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary",
+              "h-full cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg group-hover:scale-[1.02]",
               cardClassName,
             )}
           >
@@ -56,10 +56,11 @@ function StatCard({
               <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
               <Icon className={cn("w-4 h-4 text-muted-foreground", iconClassName)} />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex items-end justify-between">
               <div className={cn("text-3xl font-bold", valueClassName)}>
                 {value?.toLocaleString() ?? "-"}
               </div>
+              <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
             </CardContent>
           </Card>
         </Link>
@@ -118,11 +119,13 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
-                href="/search"
+                href="/facilities"
                 title="Registered Facilities"
                 tooltip="Browse all registered healthcare facilities."
                 icon={Building2}
                 value={stats?.registeredFacilities}
+                iconClassName="text-blue-600"
+                cardClassName="bg-blue-50 border-blue-200 hover:border-blue-300 hover:bg-blue-100"
               />
               <StatCard
                 href="/reported-facilities"
@@ -131,22 +134,25 @@ export default function Home() {
                 icon={AlertTriangle}
                 value={stats?.facilitiesWithReports}
                 iconClassName="text-red-600"
-                cardClassName="bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300"
+                cardClassName="bg-red-50 border-red-200 hover:border-red-300 hover:bg-red-100"
               />
               <StatCard
-                href="/search?filter=no-reports"
+                href="/no-reports"
                 title="Facilities With Zero Reports"
                 tooltip="Browse facilities with no reports."
                 icon={ShieldCheck}
                 value={stats?.facilitiesWithZeroReports}
                 valueClassName="text-green-600"
+                cardClassName="bg-green-50 border-green-200 hover:border-green-300 hover:bg-green-100"
               />
               <StatCard
-                href="/search?sort=recent-reports"
+                href="/reports"
                 title="Total Reports Received"
-                tooltip="Explore recently reported facilities."
+                tooltip="Explore the reports directory."
                 icon={FileText}
                 value={stats?.totalReports}
+                valueClassName="text-orange-600"
+                cardClassName="bg-orange-50 border-orange-200 hover:border-orange-300 hover:bg-orange-100"
               />
             </div>
 

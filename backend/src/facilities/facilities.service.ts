@@ -2,8 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type Facility as FacilityModel } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { FacilityDetailDto } from './dto/facility-detail.dto';
-import { FacilityReportedDto } from './dto/facility-reported.dto';
+import { FacilityDirectoryItemDto } from './dto/facility-directory-item.dto';
+import { FacilityDirectoryQueryDto } from './dto/facility-directory-query.dto';
+import { FacilityFiltersDto } from './dto/facility-filters.dto';
 import { FacilitySummaryDto } from './dto/facility-summary.dto';
+import { PaginatedFacilityResponseDto } from './dto/paginated-facility-response.dto';
 
 type FacilitySearchRow = {
   id: number;
@@ -64,7 +67,7 @@ export class FacilitiesService {
     return this.mapDetailModel(facility);
   }
 
-  async listReported(): Promise<FacilityReportedDto[]> {
+  async listReported(): Promise<FacilityDirectoryItemDto[]> {
     const rows = await this.prismaService.facility.findMany({
       where: {
         reportsReceived: {
@@ -78,7 +81,106 @@ export class FacilitiesService {
       ],
     });
 
-    return rows.map((row) => ({
+    return rows.map((row) => this.mapDirectoryItem(row));
+  }
+
+  async listDirectory(query: FacilityDirectoryQueryDto): Promise<PaginatedFacilityResponseDto> {
+    const page = Math.max(1, query.page ?? 1);
+    const pageSize = Math.min(Math.max(query.pageSize ?? 25, 1), 100);
+    const search = query.q?.trim();
+
+    const where: Prisma.FacilityWhereInput = {};
+    if (query.filter === 'reported') {
+      where.reportsReceived = { gt: 0 };
+    } else if (query.filter === 'no-reports') {
+      where.reportsReceived = { equals: 0 };
+    }
+
+    if (search) {
+      where.OR = [
+        { facilityName: { contains: search, mode: 'insensitive' } },
+        { county: { contains: search, mode: 'insensitive' } },
+        { ownership: { contains: search, mode: 'insensitive' } },
+        { facilityLevel: { contains: search, mode: 'insensitive' } },
+        { slug: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.county) {
+      where.county = query.county;
+    }
+    if (query.ownership) {
+      where.ownership = query.ownership;
+    }
+    if (query.level) {
+      where.facilityLevel = query.level;
+    }
+
+    const orderBy = this.mapDirectorySort(query.sort);
+
+    const [total, rows] = await Promise.all([
+      this.prismaService.facility.count({ where }),
+      this.prismaService.facility.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      items: rows.map((row) => this.mapDirectoryItem(row)),
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
+  }
+
+  async getFilters(): Promise<FacilityFiltersDto> {
+    const [counties, ownerships, levels] = await Promise.all([
+      this.prismaService.facility.findMany({
+        distinct: ['county'],
+        select: { county: true },
+        orderBy: { county: 'asc' },
+      }),
+      this.prismaService.facility.findMany({
+        distinct: ['ownership'],
+        select: { ownership: true },
+        orderBy: { ownership: 'asc' },
+      }),
+      this.prismaService.facility.findMany({
+        distinct: ['facilityLevel'],
+        select: { facilityLevel: true },
+        orderBy: { facilityLevel: 'asc' },
+      }),
+    ]);
+
+    return {
+      counties: counties.map((c) => c.county),
+      ownerships: ownerships.map((o) => o.ownership),
+      levels: levels.map((l) => l.facilityLevel),
+    };
+  }
+
+  private mapDirectorySort(
+    sort?: FacilityDirectoryQueryDto['sort'],
+  ): Prisma.FacilityOrderByWithRelationInput[] {
+    switch (sort) {
+      case 'most-reports':
+        return [{ reportsReceived: 'desc' }, { facilityName: 'asc' }];
+      case 'newest':
+        return [{ createdAt: 'desc' }, { facilityName: 'asc' }];
+      case 'recently-updated':
+        return [{ lastUpdated: { sort: 'desc', nulls: 'last' } }, { facilityName: 'asc' }];
+      case 'alphabetical':
+      default:
+        return [{ facilityName: 'asc' }, { slug: 'asc' }];
+    }
+  }
+
+  private mapDirectoryItem(row: FacilityModel): FacilityDirectoryItemDto {
+    return {
       id: row.id,
       slug: row.slug,
       facilityName: row.facilityName,
@@ -90,7 +192,8 @@ export class FacilitiesService {
         ? this.formatConcernLabel(row.primaryConcern)
         : null,
       lastUpdated: row.lastUpdated?.toISOString() ?? null,
-    }));
+      createdAt: row.createdAt.toISOString(),
+    };
   }
 
   async getByIdentifier(identifier: string): Promise<FacilityDetailDto> {

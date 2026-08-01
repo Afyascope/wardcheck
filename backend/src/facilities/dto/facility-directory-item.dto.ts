@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class FacilityReportedDto {
+export class FacilityDirectoryItemDto {
   @ApiProperty({ type: Number })
   id!: number;
 
@@ -31,4 +31,9 @@ export class FacilityReportedDto {
     description: 'Timestamp of the most recently approved report',
   })
   lastUpdated?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'When the facility record was first created',
+  })
+  createdAt?: string;
 }

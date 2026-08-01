@@ -7,10 +7,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FacilityDetailDto } from './dto/facility-detail.dto';
+import { FacilityDirectoryItemDto } from './dto/facility-directory-item.dto';
+import { FacilityDirectoryQueryDto } from './dto/facility-directory-query.dto';
+import { FacilityFiltersDto } from './dto/facility-filters.dto';
 import { FacilityIdentifierDto, FacilityLookupDto } from './dto/facility-identifier.dto';
-import { FacilityReportedDto } from './dto/facility-reported.dto';
 import { FacilitySearchQueryDto } from './dto/facility-search-query.dto';
 import { FacilitySummaryDto } from './dto/facility-summary.dto';
+import { PaginatedFacilityResponseDto } from './dto/paginated-facility-response.dto';
 import { FacilitiesService } from './facilities.service';
 
 @ApiTags('facilities')
@@ -30,9 +33,33 @@ export class FacilitiesController {
   @Get('reported')
   @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
   @ApiOperation({ summary: 'List every facility with at least one approved report' })
-  @ApiOkResponse({ type: FacilityReportedDto, isArray: true })
-  listReported(): Promise<FacilityReportedDto[]> {
+  @ApiOkResponse({ type: FacilityDirectoryItemDto, isArray: true })
+  listReported(): Promise<FacilityDirectoryItemDto[]> {
     return this.facilitiesService.listReported();
+  }
+
+  @Get('no-reports')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'List facilities with zero approved reports (paginated)' })
+  @ApiOkResponse({ type: PaginatedFacilityResponseDto })
+  listNoReports(@Query() query: FacilityDirectoryQueryDto): Promise<PaginatedFacilityResponseDto> {
+    return this.facilitiesService.listDirectory({ ...query, filter: 'no-reports' });
+  }
+
+  @Get('filters')
+  @Header('Cache-Control', 'public, max-age=300, s-maxage=600')
+  @ApiOperation({ summary: 'Distinct counties, ownership types, and levels for directory filters' })
+  @ApiOkResponse({ type: FacilityFiltersDto })
+  getFilters(): Promise<FacilityFiltersDto> {
+    return this.facilitiesService.getFilters();
+  }
+
+  @Get()
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'List facilities (paginated) with search, filters, and sorting' })
+  @ApiOkResponse({ type: PaginatedFacilityResponseDto })
+  listAll(@Query() query: FacilityDirectoryQueryDto): Promise<PaginatedFacilityResponseDto> {
+    return this.facilitiesService.listDirectory(query);
   }
 
   @Get(':slug')
@@ -59,9 +86,33 @@ export class HospitalsCompatibilityController {
   @Get('reported')
   @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
   @ApiOperation({ summary: 'Compatibility alias for listing facilities with approved reports' })
-  @ApiOkResponse({ type: FacilityReportedDto, isArray: true })
-  listReported(): Promise<FacilityReportedDto[]> {
+  @ApiOkResponse({ type: FacilityDirectoryItemDto, isArray: true })
+  listReported(): Promise<FacilityDirectoryItemDto[]> {
     return this.facilitiesService.listReported();
+  }
+
+  @Get('no-reports')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'Compatibility alias for facilities with zero approved reports' })
+  @ApiOkResponse({ type: PaginatedFacilityResponseDto })
+  listNoReports(@Query() query: FacilityDirectoryQueryDto): Promise<PaginatedFacilityResponseDto> {
+    return this.facilitiesService.listDirectory({ ...query, filter: 'no-reports' });
+  }
+
+  @Get('filters')
+  @Header('Cache-Control', 'public, max-age=300, s-maxage=600')
+  @ApiOperation({ summary: 'Compatibility alias for directory filter options' })
+  @ApiOkResponse({ type: FacilityFiltersDto })
+  getFilters(): Promise<FacilityFiltersDto> {
+    return this.facilitiesService.getFilters();
+  }
+
+  @Get()
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'Compatibility alias for paginated facility directory' })
+  @ApiOkResponse({ type: PaginatedFacilityResponseDto })
+  listAll(@Query() query: FacilityDirectoryQueryDto): Promise<PaginatedFacilityResponseDto> {
+    return this.facilitiesService.listDirectory(query);
   }
 
   @Get('slug/:slug')
@@ -80,4 +131,3 @@ export class HospitalsCompatibilityController {
     return this.facilitiesService.getByIdentifier(params.identifier);
   }
 }
-

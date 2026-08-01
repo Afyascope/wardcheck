@@ -2,89 +2,30 @@ import { useEffect, useMemo } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
-import { ReportedFacilitiesTable } from "@/components/ReportedFacilitiesTable";
-import { useReportedFacilities, useSearchHospitals } from "@/hooks/api-client";
-import { useSearch, Link } from "wouter";
+import { useSearchHospitals } from "@/hooks/api-client";
+import { useSearch, Link, Redirect } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ChevronRight } from "lucide-react";
 import { useSeo } from "@/hooks/use-seo";
-import { cn, getReportBadgeClasses } from "@/lib/utils";
-import type { HospitalSearchResult } from "@/types/api";
+import { getReportBadgeClasses } from "@/lib/utils";
 
-export default function Search() {
-  const searchString = useSearch();
-  const searchParams = new URLSearchParams(searchString);
-  const q = searchParams.get("q") || "";
-  const filter = searchParams.get("filter") || "";
-  const sort = searchParams.get("sort") || "";
-
-  const viewTitle =
-    filter === "reported"
-      ? "Facilities with Reports"
-      : filter === "no-reports"
-        ? "Facilities with Zero Reports"
-        : sort === "recent-reports"
-          ? "Total Reports Received"
-          : "";
-
-  const viewDescription =
-    filter === "reported"
-      ? "View facilities with workplace reports."
-      : filter === "no-reports"
-        ? "Browse facilities with no reports."
-        : sort === "recent-reports"
-          ? "Explore recently reported facilities."
-          : "";
-
-  const isReportedView = filter === "reported";
-
+function SearchContent({ q }: { q: string }) {
   const { data: hospitals, isLoading } = useSearchHospitals(
     { q, limit: 50 },
     {
       query: {
-        enabled: !isReportedView && !!q,
+        enabled: !!q,
         queryKey: ["search-hospitals-page", q],
       },
     }
   );
 
-  const { data: reportedFacilities, isLoading: reportedLoading } = useReportedFacilities({
-    query: { enabled: isReportedView },
-  });
-
-  const reportedResults = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    let list = reportedFacilities ?? [];
-    if (term) {
-      list = list.filter(
-        (f) =>
-          f.facilityName.toLowerCase().includes(term) ||
-          f.county.toLowerCase().includes(term) ||
-          f.level.toLowerCase().includes(term),
-      );
-    }
-    return list;
-  }, [reportedFacilities, q]);
-
-  const results = useMemo(() => {
-    let list = hospitals ?? [];
-    if (filter === "no-reports") {
-      list = list.filter((h: HospitalSearchResult) => h.reportsReceived === 0);
-    }
-    if (sort === "recent-reports") {
-      list = [...list].sort(
-        (a, b) => b.reportsReceived - a.reportsReceived || a.facilityName.localeCompare(b.facilityName)
-      );
-    }
-    return list;
-  }, [hospitals, filter, sort]);
+  const results = useMemo(() => hospitals ?? [], [hospitals]);
 
   useSeo({
-    title: viewTitle
-      ? `${viewTitle} — Search Healthcare Facilities | WardCheck`
-      : q
-        ? `"${q}" — Search Healthcare Facilities | WardCheck`
-        : "Search Healthcare Facilities | WardCheck",
+    title: q
+      ? `"${q}" — Search Healthcare Facilities | WardCheck`
+      : "Search Healthcare Facilities | WardCheck",
     description:
       "Search Kenya's registered healthcare facilities by name, county, or type. Find workplace transparency data before choosing your next employer.",
     path: "/search",
@@ -103,61 +44,16 @@ export default function Search() {
   return (
     <AppLayout>
       <div className="bg-muted/20 border-b py-8">
-        <div className={cn("mx-auto px-4", filter === "reported" ? "max-w-6xl" : "max-w-4xl")}>
-          <h1 className="text-2xl font-bold mb-6 text-foreground">
-            {viewTitle || "Search Facilities"}
-          </h1>
+        <div className="max-w-4xl mx-auto px-4">
+          <h1 className="text-2xl font-bold mb-6 text-foreground">Search Facilities</h1>
           <SearchBox />
         </div>
       </div>
 
-      <div
-        className={cn(
-          "flex-1 w-full mx-auto px-4 py-8",
-          filter === "reported" ? "max-w-6xl" : "max-w-4xl",
-        )}
-      >
-        {viewTitle && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-muted-foreground">{viewDescription}</p>
-            </div>
-            <Link
-              href="/search"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              View all facilities
-            </Link>
-          </div>
-        )}
-
-        {isReportedView ? (
-          reportedLoading ? (
-            <FullPageLoader />
-          ) : reportedResults.length > 0 ? (
-            <ReportedFacilitiesTable facilities={reportedResults} />
-          ) : (
-            <div className="text-center py-16">
-              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-2">No reported facilities found</h3>
-              <p className="text-muted-foreground">
-                {q.trim()
-                  ? `No facilities with reports match "${q}".`
-                  : "There are no reported facilities yet."}
-              </p>
-            </div>
-          )
-        ) : !q ? (
+      <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+        {!q ? (
           <div className="text-center text-muted-foreground py-12">
-            {viewTitle ? (
-              <>
-                <p className="text-lg font-semibold text-foreground mb-2">{viewTitle}</p>
-                <p className="text-sm">{viewDescription}</p>
-                <p className="mt-4">Use the search box above to explore facilities.</p>
-              </>
-            ) : (
-              "Enter a search query to find health facilities."
-            )}
+            Enter a search query to find health facilities.
           </div>
         ) : isLoading ? (
           <FullPageLoader />
@@ -182,7 +78,7 @@ export default function Search() {
                       <span>{facility.level}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto mt-2 md:mt-0">
                     <span className={getReportBadgeClasses(facility.reportsReceived)}>
                       {facility.reportsReceived === 0 ? "0 reports" : `${facility.reportsReceived} report${facility.reportsReceived > 1 ? 's' : ''}`}
@@ -203,4 +99,24 @@ export default function Search() {
       </div>
     </AppLayout>
   );
+}
+
+export default function Search() {
+  const searchString = useSearch();
+  const searchParams = new URLSearchParams(searchString);
+  const q = searchParams.get("q") || "";
+  const filter = searchParams.get("filter") || "";
+  const sort = searchParams.get("sort") || "";
+
+  if (filter === "reported") {
+    return <Redirect to="/reported-facilities" />;
+  }
+  if (filter === "no-reports") {
+    return <Redirect to="/no-reports" />;
+  }
+  if (sort === "recent-reports") {
+    return <Redirect to="/reports" />;
+  }
+
+  return <SearchContent q={q} />;
 }

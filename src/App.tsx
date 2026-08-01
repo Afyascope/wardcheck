@@ -10,6 +10,9 @@ import { useSeo } from "@/hooks/use-seo";
 import Home from "@/pages/Home";
 import Search from "@/pages/Search";
 import ReportedFacilities from "@/pages/ReportedFacilities";
+import RegisteredFacilities from "@/pages/RegisteredFacilities";
+import NoReportsFacilities from "@/pages/NoReportsFacilities";
+import ReportsDirectory from "@/pages/ReportsDirectory";
 import Facility from "@/pages/Facility";
 import Report from "@/pages/Report";
 import BlogList from "@/pages/BlogList";
@@ -91,6 +94,9 @@ function AppRoutes() {
       <Route path="/" component={Home} />
       <Route path="/search" component={Search} />
       <Route path="/reported-facilities" component={ReportedFacilities} />
+      <Route path="/facilities" component={RegisteredFacilities} />
+      <Route path="/no-reports" component={NoReportsFacilities} />
+      <Route path="/reports" component={ReportsDirectory} />
       <Route path="/facility/:slug" component={Facility} />
       <Route path="/report" component={Report} />
       <Route path="/blog" component={BlogList} />
