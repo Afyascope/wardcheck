@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
@@ -8,21 +8,59 @@ import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ChevronRight } from "lucide-react";
 import { useSeo } from "@/hooks/use-seo";
 import { getReportBadgeClasses } from "@/lib/utils";
+import type { HospitalSearchResult } from "@/types/api";
 
 export default function Search() {
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
   const q = searchParams.get("q") || "";
+  const filter = searchParams.get("filter") || "";
+  const sort = searchParams.get("sort") || "";
+
+  const viewTitle =
+    filter === "reported"
+      ? "Facilities with Reports"
+      : filter === "no-reports"
+        ? "Facilities with Zero Reports"
+        : sort === "recent-reports"
+          ? "Total Reports Received"
+          : "";
+
+  const viewDescription =
+    filter === "reported"
+      ? "View facilities with workplace reports."
+      : filter === "no-reports"
+        ? "Browse facilities with no reports."
+        : sort === "recent-reports"
+          ? "Explore recently reported facilities."
+          : "";
 
   const { data: hospitals, isLoading } = useSearchHospitals(
     { q, limit: 50 },
     { query: { enabled: !!q, queryKey: ["search-hospitals-page", q] } }
   );
 
+  const results = useMemo(() => {
+    let list = hospitals ?? [];
+    if (filter === "reported") {
+      list = list.filter((h: HospitalSearchResult) => h.reportsReceived > 0);
+    } else if (filter === "no-reports") {
+      list = list.filter((h: HospitalSearchResult) => h.reportsReceived === 0);
+    }
+    if (sort === "recent-reports") {
+      list = [...list].sort(
+        (a, b) => b.reportsReceived - a.reportsReceived || a.facilityName.localeCompare(b.facilityName)
+      );
+    }
+    return list;
+  }, [hospitals, filter, sort]);
+
   useSeo({
-    title: q
-      ? `"${q}" — Search Healthcare Facilities | WardCheck`
-      : "Search Healthcare Facilities | WardCheck",
+    title: viewTitle
+      ? `${viewTitle} — Search Healthcare Facilities | WardCheck`
+      : q
+        ? `"${q}" — Search Healthcare Facilities | WardCheck`
+        : "Search Healthcare Facilities | WardCheck",
     description:
       "Search Kenya's registered healthcare facilities by name, county, or type. Find workplace transparency data before choosing your next employer.",
     path: "/search",
@@ -42,24 +80,48 @@ export default function Search() {
     <AppLayout>
       <div className="bg-muted/20 border-b py-8">
         <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-6 text-foreground">Search Facilities</h1>
+          <h1 className="text-2xl font-bold mb-6 text-foreground">
+            {viewTitle || "Search Facilities"}
+          </h1>
           <SearchBox />
         </div>
       </div>
 
       <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+        {viewTitle && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-muted-foreground">{viewDescription}</p>
+            </div>
+            <Link
+              href="/search"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              View all facilities
+            </Link>
+          </div>
+        )}
+
         {!q ? (
           <div className="text-center text-muted-foreground py-12">
-            Enter a search query to find health facilities.
+            {viewTitle ? (
+              <>
+                <p className="text-lg font-semibold text-foreground mb-2">{viewTitle}</p>
+                <p className="text-sm">{viewDescription}</p>
+                <p className="mt-4">Use the search box above to explore facilities.</p>
+              </>
+            ) : (
+              "Enter a search query to find health facilities."
+            )}
           </div>
         ) : isLoading ? (
           <FullPageLoader />
-        ) : hospitals && hospitals.length > 0 ? (
+        ) : results.length > 0 ? (
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
-              {hospitals.length} result{hospitals.length !== 1 && "s"} for "{q}"
+              {results.length} result{results.length !== 1 && "s"} for "{q}"
             </h2>
-            {hospitals.map(facility => (
+            {results.map(facility => (
               <Link key={facility.id} href={`/facility/${facility.slug}`}>
                 <div className="group border rounded-xl p-5 hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer bg-card flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>

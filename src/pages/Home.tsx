@@ -4,9 +4,70 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, AlertTriangle, FileText, ShieldCheck } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Building2, AlertTriangle, FileText, Flag, ShieldCheck, type LucideIcon } from "lucide-react";
 import { useSeo, ORGANIZATION_SCHEMA, WEBSITE_SCHEMA, SITE_URL } from "@/hooks/use-seo";
-import { getReportBadgeClasses } from "@/lib/utils";
+import { cn, getReportBadgeClasses } from "@/lib/utils";
+
+const reportCtaClasses =
+  "rounded-lg px-6 shadow-md hover:shadow-lg transition-all active:scale-[0.98] hover:bg-destructive/90 text-white font-semibold";
+
+type StatCardProps = {
+  href: string;
+  title: string;
+  tooltip: string;
+  icon: LucideIcon;
+  value: number | undefined;
+  iconClassName?: string;
+  valueClassName?: string;
+  cardClassName?: string;
+};
+
+function StatCard({
+  href,
+  title,
+  tooltip,
+  icon: Icon,
+  value,
+  iconClassName,
+  valueClassName,
+  cardClassName,
+}: StatCardProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          href={href}
+          className="block h-full rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          onKeyDown={(e) => {
+            if (e.key === " ") {
+              e.preventDefault();
+              e.currentTarget.click();
+            }
+          }}
+        >
+          <Card
+            className={cn(
+              "h-full cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg hover:border-primary",
+              cardClassName,
+            )}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+              <Icon className={cn("w-4 h-4 text-muted-foreground", iconClassName)} />
+            </CardHeader>
+            <CardContent>
+              <div className={cn("text-3xl font-bold", valueClassName)}>
+                {value?.toLocaleString() ?? "-"}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export default function Home() {
   const { data: stats } = useGetNationalStats();
@@ -40,8 +101,11 @@ export default function Home() {
             <SearchBox />
 
             <div className="mt-8 flex items-center justify-center">
-              <Button asChild variant="default" className="rounded-full font-semibold">
-                <Link href="/report">Report a facility</Link>
+              <Button asChild variant="destructive" className={reportCtaClasses}>
+                <Link href="/report">
+                  <Flag className="w-4 h-4" />
+                  Report a facility
+                </Link>
               </Button>
             </div>
           </div>
@@ -53,42 +117,37 @@ export default function Home() {
             <h2 className="text-2xl font-bold mb-8 text-center">National Workplace Statistics</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Registered Facilities</CardTitle>
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats?.registeredFacilities?.toLocaleString() ?? "-"}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Facilities with Reports</CardTitle>
-                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats?.facilitiesWithReports?.toLocaleString() ?? "-"}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Facilities With Zero Reports</CardTitle>
-                  <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{stats?.facilitiesWithZeroReports?.toLocaleString() ?? "-"}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Reports Received</CardTitle>
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stats?.totalReports?.toLocaleString() ?? "-"}</div>
-                </CardContent>
-              </Card>
+              <StatCard
+                href="/search"
+                title="Registered Facilities"
+                tooltip="Browse all registered healthcare facilities."
+                icon={Building2}
+                value={stats?.registeredFacilities}
+              />
+              <StatCard
+                href="/search?filter=reported"
+                title="Facilities with Reports"
+                tooltip="View facilities with workplace reports."
+                icon={AlertTriangle}
+                value={stats?.facilitiesWithReports}
+                iconClassName="text-red-600"
+                cardClassName="bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-300"
+              />
+              <StatCard
+                href="/search?filter=no-reports"
+                title="Facilities With Zero Reports"
+                tooltip="Browse facilities with no reports."
+                icon={ShieldCheck}
+                value={stats?.facilitiesWithZeroReports}
+                valueClassName="text-green-600"
+              />
+              <StatCard
+                href="/search?sort=recent-reports"
+                title="Total Reports Received"
+                tooltip="Explore recently reported facilities."
+                icon={FileText}
+                value={stats?.totalReports}
+              />
             </div>
 
             {stats?.newestFacilitiesReported && stats.newestFacilitiesReported.length > 0 && (

@@ -1,5 +1,9 @@
+import { Flag } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+
+const reportCtaClasses =
+  "rounded-lg px-6 shadow-md hover:shadow-lg transition-all active:scale-[0.98] hover:bg-destructive/90 text-white font-semibold";
 
 export function Navbar() {
   return (
@@ -12,8 +16,11 @@ export function Navbar() {
           <span className="font-bold text-xl tracking-tight text-foreground">WardCheck</span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Button asChild variant="outline" className="font-semibold">
-            <Link href="/report">Report a facility</Link>
+          <Button asChild variant="destructive" className={reportCtaClasses}>
+            <Link href="/report">
+              <Flag className="w-4 h-4" />
+              Report a facility
+            </Link>
           </Button>
         </nav>
       </div>
