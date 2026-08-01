@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getHospitalBySlug } from "@/api/public";
-import { getGetHospitalBySlugQueryKey } from "@/hooks/useGetHospitalBySlug";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getReportBadgeClasses } from "@/lib/utils";
-import type { HospitalDetail, HospitalSearchResult } from "@/types/api";
+import type { ReportedFacility } from "@/types/api";
 
 const PAGE_SIZE = 25;
 
@@ -30,41 +27,22 @@ function reportCountLabel(count: number) {
   return `${count} report${count > 1 ? "s" : ""}`;
 }
 
-export function ReportedFacilitiesTable({ facilities }: { facilities: HospitalSearchResult[] }) {
+export function ReportedFacilitiesTable({ facilities }: { facilities: ReportedFacility[] }) {
   const [, navigate] = useLocation();
-
-  const slugs = useMemo(() => facilities.map((f) => f.slug), [facilities]);
-
-  const details = useQueries({
-    queries: slugs.map((slug) => ({
-      queryKey: getGetHospitalBySlugQueryKey(slug),
-      queryFn: () => getHospitalBySlug(slug),
-      staleTime: 5 * 60 * 1000,
-    })),
-    combine: (results) => {
-      const bySlug = new Map<string, HospitalDetail>();
-      const loading = new Set<string>();
-      results.forEach((r, i) => {
-        if (r.data) bySlug.set(slugs[i], r.data);
-        if (r.isLoading || r.isFetching) loading.add(slugs[i]);
-      });
-      return { bySlug, loading };
-    },
-  });
 
   const sorted = useMemo(() => {
     return [...facilities].sort((a, b) => {
       if (b.reportsReceived !== a.reportsReceived) {
         return b.reportsReceived - a.reportsReceived;
       }
-      const aUp = details.bySlug.get(a.slug)?.updatedAt ?? "";
-      const bUp = details.bySlug.get(b.slug)?.updatedAt ?? "";
+      const aUp = a.lastUpdated ?? "";
+      const bUp = b.lastUpdated ?? "";
       if (aUp && bUp && aUp !== bUp) {
         return bUp.localeCompare(aUp);
       }
       return a.facilityName.localeCompare(b.facilityName);
     });
-  }, [facilities, details.bySlug]);
+  }, [facilities]);
 
   const [page, setPage] = useState(1);
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
@@ -92,89 +70,73 @@ export function ReportedFacilitiesTable({ facilities }: { facilities: HospitalSe
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pageItems.map((f) => {
-              const detail = details.bySlug.get(f.slug);
-              const concernLoading = details.loading.has(f.slug);
-              return (
-                <TableRow
-                  key={f.id}
-                  onClick={() => navigate(`/facility/${f.slug}`)}
-                  className="cursor-pointer"
-                >
-                  <TableCell className="py-3">
-                    <Link
-                      href={`/facility/${f.slug}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="font-semibold text-foreground hover:text-primary transition-colors"
-                    >
-                      {f.facilityName}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{f.county}</TableCell>
-                  <TableCell className="text-muted-foreground">{f.level}</TableCell>
-                  <TableCell>
-                    <span className={getReportBadgeClasses(f.reportsReceived)}>
-                      {reportCountLabel(f.reportsReceived)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {concernLoading ? (
-                      <span className="text-sm text-muted-foreground">…</span>
-                    ) : (
-                      <ConcernBadge concern={detail?.mostCommonConcern ?? null} />
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link
-                      href={`/facility/${f.slug}`}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`View ${f.facilityName}`}
-                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    >
-                      View
-                      <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {pageItems.map((f) => (
+              <TableRow
+                key={f.id}
+                onClick={() => navigate(`/facility/${f.slug}`)}
+                className="cursor-pointer"
+              >
+                <TableCell className="py-3">
+                  <Link
+                    href={`/facility/${f.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-semibold text-foreground hover:text-primary transition-colors"
+                  >
+                    {f.facilityName}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{f.county}</TableCell>
+                <TableCell className="text-muted-foreground">{f.level}</TableCell>
+                <TableCell>
+                  <span className={getReportBadgeClasses(f.reportsReceived)}>
+                    {reportCountLabel(f.reportsReceived)}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <ConcernBadge concern={f.mostCommonConcern ?? null} />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link
+                    href={`/facility/${f.slug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`View ${f.facilityName}`}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    View
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
 
       <ul className="md:hidden space-y-3">
-        {pageItems.map((f) => {
-          const detail = details.bySlug.get(f.slug);
-          const concernLoading = details.loading.has(f.slug);
-          return (
-            <li key={f.id}>
-              <Link
-                href={`/facility/${f.slug}`}
-                className="block border rounded-xl bg-card p-4 hover:border-primary hover:shadow-sm transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold text-foreground">{f.facilityName}</div>
-                    <div className="text-sm text-muted-foreground mt-0.5">
-                      {f.county} • {f.level}
-                    </div>
+        {pageItems.map((f) => (
+          <li key={f.id}>
+            <Link
+              href={`/facility/${f.slug}`}
+              className="block border rounded-xl bg-card p-4 hover:border-primary hover:shadow-sm transition-all cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-foreground">{f.facilityName}</div>
+                  <div className="text-sm text-muted-foreground mt-0.5">
+                    {f.county} • {f.level}
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className={getReportBadgeClasses(f.reportsReceived)}>
-                    {reportCountLabel(f.reportsReceived)}
-                  </span>
-                  {concernLoading ? (
-                    <span className="text-sm text-muted-foreground">…</span>
-                  ) : (
-                    <ConcernBadge concern={detail?.mostCommonConcern ?? null} />
-                  )}
-                </div>
-              </Link>
-            </li>
-          );
-        })}
+                <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={getReportBadgeClasses(f.reportsReceived)}>
+                  {reportCountLabel(f.reportsReceived)}
+                </span>
+                <ConcernBadge concern={f.mostCommonConcern ?? null} />
+              </div>
+            </Link>
+          </li>
+        ))}
       </ul>
 
       {sorted.length > 0 && (

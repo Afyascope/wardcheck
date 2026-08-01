@@ -1,22 +1,35 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchHospitals } from "@/hooks/api-client";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getReportBadgeClasses } from "@/lib/utils";
 
-export function SearchBox() {
+type SearchBoxProps = {
+  variant?: "search" | "filter";
+  value?: string;
+  onFilter?: (value: string) => void;
+};
+
+export function SearchBox({ variant = "search", value, onFilter }: SearchBoxProps) {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
-  const [query, setQuery] = useState("");
+  const isFilter = variant === "filter";
+  const [internalQuery, setInternalQuery] = useState("");
+  const query = isFilter ? (value ?? "") : internalQuery;
   const debouncedQuery = useDebounce(query, 300);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const { data: hospitals } = useSearchHospitals(
     { q: debouncedQuery, limit: 5 },
-    { query: { enabled: debouncedQuery.length > 1, queryKey: ["search-hospitals-nav", debouncedQuery] } }
+    {
+      query: {
+        enabled: !isFilter && debouncedQuery.length > 1,
+        queryKey: ["search-hospitals-nav", debouncedQuery],
+      },
+    }
   );
 
   useEffect(() => {
@@ -29,8 +42,17 @@ export function SearchBox() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const updateQuery = (next: string) => {
+    if (isFilter) {
+      onFilter?.(next);
+    } else {
+      setInternalQuery(next);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFilter) return;
     if (query.trim()) {
       const params = new URLSearchParams(searchString);
       params.set("q", query.trim());
@@ -47,20 +69,41 @@ export function SearchBox() {
           <Input
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
-              setIsOpen(true);
+              updateQuery(e.target.value);
+              if (!isFilter) setIsOpen(true);
             }}
-            onFocus={() => setIsOpen(true)}
-            placeholder="Search by facility name, county, or registration..."
-            className="w-full h-14 pl-12 pr-4 text-lg rounded-full border-2 border-primary/20 focus-visible:border-primary shadow-sm bg-white"
+            onFocus={() => !isFilter && setIsOpen(true)}
+            placeholder={
+              isFilter
+                ? "Filter by facility name, county, or level..."
+                : "Search by facility name, county, or registration..."
+            }
+            className={`w-full h-14 pl-12 text-lg rounded-full border-2 border-primary/20 focus-visible:border-primary shadow-sm bg-white ${
+              isFilter ? "pr-14" : "pr-4"
+            }`}
           />
-          <button type="submit" className="absolute right-2 px-4 h-10 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-colors">
-            Search
-          </button>
+          {isFilter ? (
+            <button
+              type="button"
+              aria-label="Clear filter"
+              onClick={() => updateQuery("")}
+              disabled={!query}
+              className="absolute right-3 h-8 w-8 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-0 disabled:pointer-events-none"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="absolute right-2 px-4 h-10 bg-primary text-primary-foreground font-medium rounded-full hover:bg-primary/90 transition-colors"
+            >
+              Search
+            </button>
+          )}
         </div>
       </form>
 
-      {isOpen && debouncedQuery.length > 1 && (
+      {!isFilter && isOpen && debouncedQuery.length > 1 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border overflow-hidden z-50">
           {hospitals && hospitals.length > 0 ? (
             <ul className="py-2">
@@ -72,7 +115,7 @@ export function SearchBox() {
                     onClick={() => {
                       setLocation(`/facility/${h.slug}`);
                       setIsOpen(false);
-                      setQuery("");
+                      setInternalQuery("");
                     }}
                   >
                     <div className="font-semibold text-foreground">{h.facilityName}</div>

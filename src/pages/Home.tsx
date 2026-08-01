@@ -125,7 +125,7 @@ export default function Home() {
                 value={stats?.registeredFacilities}
               />
               <StatCard
-                href="/search?filter=reported"
+                href="/reported-facilities"
                 title="Facilities with Reports"
                 tooltip="View facilities with workplace reports."
                 icon={AlertTriangle}

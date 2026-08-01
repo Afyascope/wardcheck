@@ -45,6 +45,18 @@ export interface HospitalSearchResult {
   reportsReceived: number;
 }
 
+export interface ReportedFacility {
+  id: number;
+  slug: string;
+  facilityName: string;
+  county: string;
+  level: string;
+  ownership: string;
+  reportsReceived: number;
+  mostCommonConcern?: string | null;
+  lastUpdated?: string | null;
+}
+
 export interface HospitalDetail extends HospitalSearchResult {
   subCounty?: string | null;
   ward?: string | null;

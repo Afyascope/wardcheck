@@ -3,7 +3,7 @@ import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
 import { ReportedFacilitiesTable } from "@/components/ReportedFacilitiesTable";
-import { useSearchHospitals } from "@/hooks/api-client";
+import { useReportedFacilities, useSearchHospitals } from "@/hooks/api-client";
 import { useSearch, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ChevronRight } from "lucide-react";
@@ -36,16 +36,39 @@ export default function Search() {
           ? "Explore recently reported facilities."
           : "";
 
+  const isReportedView = filter === "reported";
+
   const { data: hospitals, isLoading } = useSearchHospitals(
     { q, limit: 50 },
-    { query: { enabled: !!q, queryKey: ["search-hospitals-page", q] } }
+    {
+      query: {
+        enabled: !isReportedView && !!q,
+        queryKey: ["search-hospitals-page", q],
+      },
+    }
   );
+
+  const { data: reportedFacilities, isLoading: reportedLoading } = useReportedFacilities({
+    query: { enabled: isReportedView },
+  });
+
+  const reportedResults = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    let list = reportedFacilities ?? [];
+    if (term) {
+      list = list.filter(
+        (f) =>
+          f.facilityName.toLowerCase().includes(term) ||
+          f.county.toLowerCase().includes(term) ||
+          f.level.toLowerCase().includes(term),
+      );
+    }
+    return list;
+  }, [reportedFacilities, q]);
 
   const results = useMemo(() => {
     let list = hospitals ?? [];
-    if (filter === "reported") {
-      list = list.filter((h: HospitalSearchResult) => h.reportsReceived > 0);
-    } else if (filter === "no-reports") {
+    if (filter === "no-reports") {
       list = list.filter((h: HospitalSearchResult) => h.reportsReceived === 0);
     }
     if (sort === "recent-reports") {
@@ -108,7 +131,23 @@ export default function Search() {
           </div>
         )}
 
-        {!q ? (
+        {isReportedView ? (
+          reportedLoading ? (
+            <FullPageLoader />
+          ) : reportedResults.length > 0 ? (
+            <ReportedFacilitiesTable facilities={reportedResults} />
+          ) : (
+            <div className="text-center py-16">
+              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-foreground mb-2">No reported facilities found</h3>
+              <p className="text-muted-foreground">
+                {q.trim()
+                  ? `No facilities with reports match "${q}".`
+                  : "There are no reported facilities yet."}
+              </p>
+            </div>
+          )
+        ) : !q ? (
           <div className="text-center text-muted-foreground py-12">
             {viewTitle ? (
               <>
@@ -122,18 +161,6 @@ export default function Search() {
           </div>
         ) : isLoading ? (
           <FullPageLoader />
-        ) : filter === "reported" ? (
-          results.length > 0 ? (
-            <ReportedFacilitiesTable facilities={results} />
-          ) : (
-            <div className="text-center py-16">
-              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-foreground mb-2">No reported facilities found</h3>
-              <p className="text-muted-foreground">
-                We couldn't find any facilities with reports matching "{q}".
-              </p>
-            </div>
-          )
         ) : results.length > 0 ? (
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">

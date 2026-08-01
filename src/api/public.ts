@@ -6,10 +6,15 @@ import type {
   HospitalDetail,
   HospitalSearchResult,
   NationalStats,
+  ReportedFacility,
 } from "@/types/api";
 
 export function searchHospitals(params: { q?: string; limit?: number }) {
   return apiRequest<HospitalSearchResult[]>("/api/hospitals/search", { params });
+}
+
+export function getReportedFacilities() {
+  return apiRequest<ReportedFacility[]>("/api/hospitals/reported");
 }
 
 export function getHospitalBySlug(slug: string) {

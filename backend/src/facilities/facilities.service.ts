@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, type Facility as FacilityModel } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { FacilityDetailDto } from './dto/facility-detail.dto';
+import { FacilityReportedDto } from './dto/facility-reported.dto';
 import { FacilitySummaryDto } from './dto/facility-summary.dto';
 
 type FacilitySearchRow = {
@@ -61,6 +62,35 @@ export class FacilitiesService {
     }
 
     return this.mapDetailModel(facility);
+  }
+
+  async listReported(): Promise<FacilityReportedDto[]> {
+    const rows = await this.prismaService.facility.findMany({
+      where: {
+        reportsReceived: {
+          gt: 0,
+        },
+      },
+      orderBy: [
+        { reportsReceived: 'desc' },
+        { lastUpdated: 'desc' },
+        { facilityName: 'asc' },
+      ],
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      facilityName: row.facilityName,
+      county: row.county,
+      level: row.facilityLevel,
+      ownership: row.ownership,
+      reportsReceived: row.reportsReceived,
+      mostCommonConcern: row.primaryConcern
+        ? this.formatConcernLabel(row.primaryConcern)
+        : null,
+      lastUpdated: row.lastUpdated?.toISOString() ?? null,
+    }));
   }
 
   async getByIdentifier(identifier: string): Promise<FacilityDetailDto> {

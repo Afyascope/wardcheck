@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { FacilityDetailDto } from './dto/facility-detail.dto';
 import { FacilityIdentifierDto, FacilityLookupDto } from './dto/facility-identifier.dto';
+import { FacilityReportedDto } from './dto/facility-reported.dto';
 import { FacilitySearchQueryDto } from './dto/facility-search-query.dto';
 import { FacilitySummaryDto } from './dto/facility-summary.dto';
 import { FacilitiesService } from './facilities.service';
@@ -24,6 +25,14 @@ export class FacilitiesController {
   @ApiOkResponse({ type: FacilitySummaryDto, isArray: true })
   search(@Query() query: FacilitySearchQueryDto): Promise<FacilitySummaryDto[]> {
     return this.facilitiesService.search(query.q ?? '', query.limit);
+  }
+
+  @Get('reported')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'List every facility with at least one approved report' })
+  @ApiOkResponse({ type: FacilityReportedDto, isArray: true })
+  listReported(): Promise<FacilityReportedDto[]> {
+    return this.facilitiesService.listReported();
   }
 
   @Get(':slug')
@@ -45,6 +54,14 @@ export class HospitalsCompatibilityController {
   @ApiOkResponse({ type: FacilitySummaryDto, isArray: true })
   search(@Query() query: FacilitySearchQueryDto): Promise<FacilitySummaryDto[]> {
     return this.facilitiesService.search(query.q ?? '', query.limit);
+  }
+
+  @Get('reported')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
+  @ApiOperation({ summary: 'Compatibility alias for listing facilities with approved reports' })
+  @ApiOkResponse({ type: FacilityReportedDto, isArray: true })
+  listReported(): Promise<FacilityReportedDto[]> {
+    return this.facilitiesService.listReported();
   }
 
   @Get('slug/:slug')
