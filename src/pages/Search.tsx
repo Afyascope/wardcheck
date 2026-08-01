@@ -2,12 +2,13 @@ import { useEffect, useMemo } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SearchBox } from "@/components/SearchBox";
+import { ReportedFacilitiesTable } from "@/components/ReportedFacilitiesTable";
 import { useSearchHospitals } from "@/hooks/api-client";
 import { useSearch, Link } from "wouter";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { Building2, AlertTriangle, ChevronRight } from "lucide-react";
 import { useSeo } from "@/hooks/use-seo";
-import { getReportBadgeClasses } from "@/lib/utils";
+import { cn, getReportBadgeClasses } from "@/lib/utils";
 import type { HospitalSearchResult } from "@/types/api";
 
 export default function Search() {
@@ -79,7 +80,7 @@ export default function Search() {
   return (
     <AppLayout>
       <div className="bg-muted/20 border-b py-8">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className={cn("mx-auto px-4", filter === "reported" ? "max-w-6xl" : "max-w-4xl")}>
           <h1 className="text-2xl font-bold mb-6 text-foreground">
             {viewTitle || "Search Facilities"}
           </h1>
@@ -87,7 +88,12 @@ export default function Search() {
         </div>
       </div>
 
-      <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
+      <div
+        className={cn(
+          "flex-1 w-full mx-auto px-4 py-8",
+          filter === "reported" ? "max-w-6xl" : "max-w-4xl",
+        )}
+      >
         {viewTitle && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -116,6 +122,18 @@ export default function Search() {
           </div>
         ) : isLoading ? (
           <FullPageLoader />
+        ) : filter === "reported" ? (
+          results.length > 0 ? (
+            <ReportedFacilitiesTable facilities={results} />
+          ) : (
+            <div className="text-center py-16">
+              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-foreground mb-2">No reported facilities found</h3>
+              <p className="text-muted-foreground">
+                We couldn't find any facilities with reports matching "{q}".
+              </p>
+            </div>
+          )
         ) : results.length > 0 ? (
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">

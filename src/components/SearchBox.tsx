@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useSearchHospitals } from "@/hooks/api-client";
@@ -8,6 +8,7 @@ import { getReportBadgeClasses } from "@/lib/utils";
 
 export function SearchBox() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,7 +32,9 @@ export function SearchBox() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      setLocation(`/search?q=${encodeURIComponent(query.trim())}`);
+      const params = new URLSearchParams(searchString);
+      params.set("q", query.trim());
+      setLocation(`/search?${params.toString()}`);
       setIsOpen(false);
     }
   };
