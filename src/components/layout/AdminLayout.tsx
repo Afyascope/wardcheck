@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Building2, FileText, LayoutDashboard, LogOut, Database } from "lucide-react";
+import { Building2, FileText, LayoutDashboard, LogOut, Database, FilePlus2 } from "lucide-react";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -29,6 +29,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <Link href="/admin/reports" className={`text-sm font-medium flex items-center gap-2 ${location.startsWith('/admin/reports') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
               <FileText className="w-4 h-4" />
               Reports
+            </Link>
+            <Link href="/admin/new-report" className={`text-sm font-medium flex items-center gap-2 ${location.startsWith('/admin/new-report') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+              <FilePlus2 className="w-4 h-4" />
+              New Report
             </Link>
             <Link href="/admin/imports" className={`text-sm font-medium flex items-center gap-2 ${location.startsWith('/admin/imports') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
               <Database className="w-4 h-4" />

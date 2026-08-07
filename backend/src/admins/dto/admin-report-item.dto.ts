@@ -31,6 +31,24 @@ export class AdminReportItemDto {
   @ApiProperty({ enum: ['pending', 'approved', 'rejected'] })
   status!: string;
 
+  @ApiProperty({ enum: ['public', 'admin'] })
+  source!: string;
+
+  @ApiPropertyOptional()
+  reportDate?: string | null;
+
+  @ApiPropertyOptional()
+  sourceType?: string | null;
+
+  @ApiPropertyOptional()
+  internalNotes?: string | null;
+
+  @ApiPropertyOptional()
+  approvedAt?: string | null;
+
+  @ApiPropertyOptional()
+  approvedByName?: string | null;
+
   @ApiPropertyOptional()
   suspiciousSubmission?: boolean;
 
@@ -46,4 +64,3 @@ export class AdminReportItemDto {
   @ApiPropertyOptional()
   userAgent?: string | null;
 }
-

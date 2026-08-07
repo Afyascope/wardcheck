@@ -26,6 +26,7 @@ import Login from "@/pages/admin/Login";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminHospitals from "@/pages/admin/Hospitals";
 import AdminReports from "@/pages/admin/Reports";
+import AdminNewReport from "@/pages/admin/NewReport";
 import AdminImports from "@/pages/admin/Imports";
 import { AppLayout } from "@/components/layout/AppLayout";
 
@@ -116,6 +117,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/reports">
         <AdminRoute component={AdminReports} />
+      </Route>
+      <Route path="/admin/new-report">
+        <AdminRoute component={AdminNewReport} />
       </Route>
       <Route path="/admin/imports">
         <AdminRoute component={AdminImports} />

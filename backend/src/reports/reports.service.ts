@@ -6,11 +6,12 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ReportStatus, WorkplaceConcern, type Report as ReportModel } from '@prisma/client';
+import { ReportStatus, type Report as ReportModel } from '@prisma/client';
 import { createHash } from 'crypto';
 import { Request } from 'express';
 import { PrismaService } from '../database/prisma.service';
-import { CreateReportDto, ReportReason } from './dto/create-report.dto';
+import { CreateReportDto } from './dto/create-report.dto';
+import { ReportValidationService } from './report-validation.service';
 
 type ReportSubmissionConfig = {
   duplicateWindowDays: number;
@@ -23,17 +24,12 @@ export class ReportsService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
+    private readonly reportValidationService: ReportValidationService,
   ) {}
 
   async submit(body: CreateReportDto, request: Request): Promise<{ success: true }> {
     const facilityId = body.facilityId ?? body.hospitalId;
-    const facility = await this.prismaService.facility.findUnique({
-      where: { id: facilityId },
-    });
-
-    if (!facility) {
-      throw new UnprocessableEntityException('Selected facility does not exist.');
-    }
+    await this.reportValidationService.requireFacility(facilityId);
 
     const submittedAt = new Date();
 
@@ -98,7 +94,7 @@ export class ReportsService {
           facilityId,
           jobCategory: body.jobCategory,
           employmentYear: body.employmentYear,
-          primaryConcern: this.mapConcern(body.reason),
+          primaryConcern: this.reportValidationService.mapConcern(body.reason),
           email: normalizedEmail,
           fingerprintHash,
           ipHash,
@@ -175,22 +171,6 @@ export class ReportsService {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
-  }
-
-  private mapConcern(reason: ReportReason): WorkplaceConcern {
-    const mapping: Record<ReportReason, WorkplaceConcern> = {
-      [ReportReason.Delayed_salary]: WorkplaceConcern.DELAYED_SALARY,
-      [ReportReason.Salary_not_paid]: WorkplaceConcern.SALARY_NOT_PAID,
-      [ReportReason.Underpayment]: WorkplaceConcern.UNDERPAYMENT,
-      [ReportReason.Contract_dispute]: WorkplaceConcern.CONTRACT_DISPUTE,
-      [ReportReason.Poor_management]: WorkplaceConcern.POOR_MANAGEMENT,
-      [ReportReason.Bullying]: WorkplaceConcern.BULLYING,
-      [ReportReason.Long_working_hours]: WorkplaceConcern.LONG_WORKING_HOURS,
-      [ReportReason.Unsafe_working_conditions]: WorkplaceConcern.UNSAFE_WORKING_CONDITIONS,
-      [ReportReason.Other]: WorkplaceConcern.OTHER,
-    };
-
-    return mapping[reason];
   }
 
   private extractIpAddress(request: Request): string {

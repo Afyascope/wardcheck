@@ -1,7 +1,7 @@
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { useGetAdminStats } from "@/hooks/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, AlertTriangle, FileText, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Building2, AlertTriangle, FileText, CheckCircle2, ShieldAlert, PenSquare, CalendarClock } from "lucide-react";
 import { FullPageLoader } from "@/components/ui/loaders";
 import { useSeo } from "@/hooks/use-seo";
 
@@ -55,6 +55,24 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-600">{stats?.approvedToday?.toLocaleString() ?? "-"}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Admin Reports Created</CardTitle>
+            <PenSquare className="w-4 h-4 text-violet-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-violet-600">{stats?.adminReportsCreated?.toLocaleString() ?? "-"}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Reports Entered Today</CardTitle>
+            <CalendarClock className="w-4 h-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-600">{stats?.reportsEnteredToday?.toLocaleString() ?? "-"}</div>
           </CardContent>
         </Card>
         <Card>

@@ -22,6 +22,10 @@ export {
   useListAdminReports,
   useApproveReport,
   useRejectReport,
+  useCreateAdminReport,
+  useUpdateAdminReport,
+  useDeleteAdminReport,
+  useGetAdminReportsAnalytics,
 } from "@/hooks/useAdminReports";
 export {
   useListImportHistory,
@@ -31,10 +35,14 @@ export {
   useStartKmpdcSync,
   useRetryKmpdcImport,
 } from "@/hooks/useImportManagement";
-export { JobCategory, ReportReason, ReportStatus } from "@/types/api";
+export { JobCategory, ReportReason, ReportStatus, ReportSource, AdminReportSourceType } from "@/types/api";
 export type {
   Hospital,
   ReportStatusValue,
   JobCategoryValue,
   ReportReasonValue,
+  ReportSourceValue,
+  AdminReportSourceTypeValue,
+  CreateAdminReportInput,
+  AdminReportsAnalytics,
 } from "@/types/api";

@@ -30,7 +30,9 @@ import { FacilityDetailDto } from '../facilities/dto/facility-detail.dto';
 import { AdminFacilityQueryDto } from './dto/admin-facility-query.dto';
 import { AdminReportQueryDto } from './dto/admin-report-query.dto';
 import { AdminReportItemDto } from './dto/admin-report-item.dto';
+import { AdminReportsAnalyticsDto } from './dto/admin-reports-analytics.dto';
 import { AdminStatsDto } from './dto/admin-stats.dto';
+import { CreateAdminReportDto } from './dto/create-admin-report.dto';
 import { PaginatedAdminFacilityResponseDto } from './dto/paginated-admin-facility-response.dto';
 import { PaginatedAdminReportResponseDto } from './dto/paginated-admin-report-response.dto';
 import { UpsertFacilityDto } from './dto/upsert-facility.dto';
@@ -56,6 +58,44 @@ export class AdminsController {
   @ApiOkResponse({ type: PaginatedAdminReportResponseDto })
   listReports(@Query() query: AdminReportQueryDto): Promise<PaginatedAdminReportResponseDto> {
     return this.adminsService.listReports(query);
+  }
+
+  @Get('reports/analytics')
+  @ApiOperation({ summary: 'Report analytics for administrators' })
+  @ApiOkResponse({ type: AdminReportsAnalyticsDto })
+  getReportsAnalytics(): Promise<AdminReportsAnalyticsDto> {
+    return this.adminsService.getReportsAnalytics();
+  }
+
+  @Post('reports')
+  @ApiOperation({ summary: 'Create an admin report (auto-approved, source ADMIN)' })
+  @ApiOkResponse({ type: AdminReportItemDto })
+  createReport(
+    @Body() body: CreateAdminReportDto,
+    @CurrentAdmin() admin?: { sub: number },
+  ): Promise<AdminReportItemDto> {
+    return this.adminsService.createReport(body, admin?.sub);
+  }
+
+  @Patch('reports/:id')
+  @ApiOperation({ summary: 'Edit a report' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: AdminReportItemDto })
+  updateReport(
+    @Param('id') id: string,
+    @Body() body: CreateAdminReportDto,
+    @CurrentAdmin() admin?: { sub: number },
+  ): Promise<AdminReportItemDto> {
+    return this.adminsService.updateReport(Number.parseInt(id, 10), body, admin?.sub);
+  }
+
+  @Delete('reports/:id')
+  @ApiOperation({ summary: 'Delete a report' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  deleteReport(@Param('id') id: string, @CurrentAdmin() admin?: { sub: number }): Promise<void> {
+    return this.adminsService.deleteReport(Number.parseInt(id, 10), admin?.sub);
   }
 
   @Get('reports/export')

@@ -29,11 +29,29 @@ export const ReportStatus = {
   rejected: "rejected",
 } as const;
 
+export const ReportSource = {
+  public: "public",
+  admin: "admin",
+} as const;
+
+export const AdminReportSourceType = {
+  Historical: "Historical",
+  Interview: "Interview",
+  Survey: "Survey",
+  Verified_Staff: "Verified Staff",
+  Manual_Entry: "Manual Entry",
+  Other: "Other",
+} as const;
+
 export type JobCategoryValue = (typeof JobCategory)[keyof typeof JobCategory];
 export type ReportReasonValue =
   (typeof ReportReason)[keyof typeof ReportReason];
 export type ReportStatusValue =
   (typeof ReportStatus)[keyof typeof ReportStatus];
+export type ReportSourceValue =
+  (typeof ReportSource)[keyof typeof ReportSource];
+export type AdminReportSourceTypeValue =
+  (typeof AdminReportSourceType)[keyof typeof AdminReportSourceType];
 
 export interface HospitalSearchResult {
   id: number;
@@ -143,6 +161,8 @@ export interface AdminStats {
   totalReports: number;
   reportsPending: number;
   approvedToday: number;
+  adminReportsCreated: number;
+  reportsEnteredToday: number;
   suspiciousReports?: number;
 }
 
@@ -169,6 +189,7 @@ export interface PaginatedResponse<T> {
 export interface AdminReportItem {
   id: number;
   submittedAt: string;
+  facilityId: number;
   facilityName: string;
   county: string;
   reason: string;
@@ -176,11 +197,35 @@ export interface AdminReportItem {
   employmentYear: number;
   email?: string | null;
   status: ReportStatusValue;
+  source: ReportSourceValue;
+  reportDate?: string | null;
+  sourceType?: string | null;
+  internalNotes?: string | null;
+  approvedAt?: string | null;
+  approvedByName?: string | null;
   suspiciousSubmission?: boolean;
   suspiciousReason?: string | null;
   fingerprintHash?: string | null;
   ipHash?: string | null;
   userAgent?: string | null;
+}
+
+export interface CreateAdminReportInput {
+  hospitalId: number;
+  jobCategory: JobCategoryValue;
+  employmentYear: number;
+  reason: ReportReasonValue;
+  email?: string;
+  reportDate?: string;
+  sourceType?: string;
+  internalNotes?: string;
+}
+
+export interface AdminReportsAnalytics {
+  adminReportsCreated: number;
+  reportsEnteredToday: number;
+  reportsPerAdmin: Array<{ adminId: number; adminName: string; count: number }>;
+  reportsPerFacility: Array<{ facilityId: number; facilityName: string; count: number }>;
 }
 
 export interface ImportHospitalsResult {

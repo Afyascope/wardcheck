@@ -2,7 +2,9 @@ import { apiRequest, buildApiUrl, buildAuthenticatedApiUrl } from "@/api/client"
 import { getStoredToken } from "@/contexts/AuthContext";
 import type {
   AdminReportItem,
+  AdminReportsAnalytics,
   AdminStats,
+  CreateAdminReportInput,
   Hospital,
   ImportHospitalsResult,
   ImportHistoryItem,
@@ -10,6 +12,7 @@ import type {
   ImportSummary,
   ImportHistoryErrorItem,
   PaginatedResponse,
+  ReportSourceValue,
   ReportStatusValue,
   UpsertHospitalInput,
 } from "@/types/api";
@@ -51,11 +54,46 @@ export function deleteHospital(id: number) {
 
 export function listAdminReports(params: {
   status?: ReportStatusValue;
+  source?: ReportSourceValue;
+  facility?: string;
+  county?: string;
+  category?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
 }) {
   return apiRequest<PaginatedResponse<AdminReportItem>>("/api/admin/reports", {
     params,
+    auth: true,
+  });
+}
+
+export function createAdminReport(data: CreateAdminReportInput) {
+  return apiRequest<AdminReportItem>("/api/admin/reports", {
+    method: "POST",
+    body: data,
+    auth: true,
+  });
+}
+
+export function updateAdminReport(id: number, data: CreateAdminReportInput) {
+  return apiRequest<AdminReportItem>(`/api/admin/reports/${id}`, {
+    method: "PATCH",
+    body: data,
+    auth: true,
+  });
+}
+
+export function deleteAdminReport(id: number) {
+  return apiRequest<void>(`/api/admin/reports/${id}`, {
+    method: "DELETE",
+    auth: true,
+  });
+}
+
+export function getAdminReportsAnalytics() {
+  return apiRequest<AdminReportsAnalytics>("/api/admin/reports/analytics", {
     auth: true,
   });
 }

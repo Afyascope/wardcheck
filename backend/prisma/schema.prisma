@@ -63,6 +63,10 @@ model Report {
   ipHash          String           @map("ip_hash")
   userAgent       String           @map("user_agent")
   status          ReportStatus     @default(PENDING)
+  source          ReportSource     @default(PUBLIC)
+  reportDate      DateTime?        @map("report_date")
+  sourceType      String?          @map("source_type")
+  internalNotes   String?          @map("internal_notes")
   submittedAt     DateTime         @default(now()) @map("submitted_at")
   approvedAt      DateTime?        @map("approved_at")
   approvedById    Int?             @map("approved_by")
@@ -70,6 +74,7 @@ model Report {
   facility        Facility         @relation(fields: [facilityId], references: [id], onDelete: Cascade)
 
   @@index([status])
+  @@index([source])
   @@index([fingerprintHash])
   @@index([ipHash])
   @@index([facilityId, fingerprintHash])
@@ -145,6 +150,11 @@ enum ReportStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ReportSource {
+  PUBLIC
+  ADMIN
 }
 
 enum ImportHistoryStatus {

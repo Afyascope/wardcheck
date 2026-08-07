@@ -10,37 +10,28 @@ import {
   Facility,
   Prisma,
   Report,
+  ReportSource,
   ReportStatus,
   WorkplaceConcern,
+  type Admin,
 } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { FacilityDetailDto } from '../facilities/dto/facility-detail.dto';
 import { PrismaService } from '../database/prisma.service';
 import { SlugGeneratorService } from '../etl/slug-generator.service';
 import { WardcheckIdService } from '../etl/wardcheck-id.service';
+import { ADMIN_FINGERPRINT_PREFIX, ReportValidationService } from '../reports/report-validation.service';
 import { AdminFacilityQueryDto } from './dto/admin-facility-query.dto';
 import { AdminReportQueryDto } from './dto/admin-report-query.dto';
 import { AdminReportItemDto } from './dto/admin-report-item.dto';
+import { AdminReportsAnalyticsDto } from './dto/admin-reports-analytics.dto';
 import { AdminStatsDto } from './dto/admin-stats.dto';
+import { CreateAdminReportDto } from './dto/create-admin-report.dto';
 import { PaginatedAdminFacilityResponseDto } from './dto/paginated-admin-facility-response.dto';
 import { PaginatedAdminReportResponseDto } from './dto/paginated-admin-report-response.dto';
 import { UpsertFacilityDto } from './dto/upsert-facility.dto';
 
-type ReportRow = {
-  id: number;
-  submittedAt: Date;
-  facilityId: number;
-  facilityName: string;
-  county: string;
-  reason: WorkplaceConcern;
-  jobCategory: string;
-  employmentYear: number;
-  email: string | null;
-  status: ReportStatus;
-  fingerprintHash: string;
-  ipHash: string;
-  userAgent: string;
-};
+type AdminReportRow = Report & { facility: Facility; approvedBy?: Admin | null };
 
 @Injectable()
 export class AdminsService {
@@ -49,11 +40,13 @@ export class AdminsService {
     private readonly configService: ConfigService,
     private readonly slugGeneratorService: SlugGeneratorService,
     private readonly wardcheckIdService: WardcheckIdService,
+    private readonly reportValidationService: ReportValidationService,
   ) {}
 
   async getDashboardStats(): Promise<AdminStatsDto> {
     const threshold = this.readNumberConfig('REPORT_SUSPICIOUS_THRESHOLD', 3);
-    const [totalFacilities, totalReports, reportsPending, approvedToday, suspiciousReports] =
+    const startOfToday = this.startOfDay(new Date());
+    const [totalFacilities, totalReports, reportsPending, approvedToday, adminReportsCreated, reportsEnteredToday, suspiciousReports] =
       await Promise.all([
         this.prismaService.facility.count(),
         this.prismaService.report.count(),
@@ -61,9 +54,11 @@ export class AdminsService {
         this.prismaService.report.count({
           where: {
             status: ReportStatus.APPROVED,
-            approvedAt: { gte: this.startOfDay(new Date()) },
+            approvedAt: { gte: startOfToday },
           },
         }),
+        this.prismaService.report.count({ where: { source: ReportSource.ADMIN } }),
+        this.prismaService.report.count({ where: { submittedAt: { gte: startOfToday } } }),
         this.countSuspiciousReports(threshold),
       ]);
 
@@ -72,6 +67,8 @@ export class AdminsService {
       totalReports,
       reportsPending,
       approvedToday,
+      adminReportsCreated,
+      reportsEnteredToday,
       suspiciousReports,
     };
   }
@@ -82,9 +79,7 @@ export class AdminsService {
     const status = this.mapReportStatus(query.status);
     const threshold = this.readNumberConfig('REPORT_SUSPICIOUS_THRESHOLD', 3);
 
-    const where = {
-      ...(status ? { status } : {}),
-    } satisfies Prisma.ReportWhereInput;
+    const where = this.buildReportFilter(query, status);
 
     const [total, rows, suspiciousMap] = await Promise.all([
       this.prismaService.report.count({ where }),
@@ -92,6 +87,7 @@ export class AdminsService {
         where,
         include: {
           facility: true,
+          approvedBy: true,
         },
         orderBy: {
           submittedAt: 'desc',
@@ -108,6 +104,192 @@ export class AdminsService {
       pageSize,
       total,
     };
+  }
+
+  async getReportsAnalytics(): Promise<AdminReportsAnalyticsDto> {
+    const startOfToday = this.startOfDay(new Date());
+    const [adminReportsCreated, reportsEnteredToday, adminGroups, facilityGroups] = await Promise.all([
+      this.prismaService.report.count({ where: { source: ReportSource.ADMIN } }),
+      this.prismaService.report.count({ where: { submittedAt: { gte: startOfToday } } }),
+      this.prismaService.report.groupBy({
+        by: ['approvedById'],
+        where: { source: ReportSource.ADMIN, approvedById: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { approvedById: 'desc' } },
+        take: 10,
+      }),
+      this.prismaService.report.groupBy({
+        by: ['facilityId'],
+        _count: { _all: true },
+        orderBy: { _count: { facilityId: 'desc' } },
+        take: 10,
+      }),
+    ]);
+
+    const adminIds = adminGroups.map((group) => group.approvedById).filter((id): id is number => id !== null);
+    const facilityIds = facilityGroups.map((group) => group.facilityId);
+
+    const [admins, facilities] = await Promise.all([
+      this.prismaService.admin.findMany({ where: { id: { in: adminIds } }, select: { id: true, name: true } }),
+      this.prismaService.facility.findMany({ where: { id: { in: facilityIds } }, select: { id: true, facilityName: true } }),
+    ]);
+
+    const adminNameById = new Map(admins.map((admin) => [admin.id, admin.name]));
+    const facilityNameById = new Map(facilities.map((facility) => [facility.id, facility.facilityName]));
+
+    return {
+      adminReportsCreated,
+      reportsEnteredToday,
+      reportsPerAdmin: adminGroups
+        .map((group) => ({
+          adminId: group.approvedById as number,
+          adminName: adminNameById.get(group.approvedById as number) ?? `Admin #${group.approvedById}`,
+          count: group._count._all,
+        }))
+        .filter((entry) => entry.count > 0),
+      reportsPerFacility: facilityGroups
+        .map((group) => ({
+          facilityId: group.facilityId,
+          facilityName: facilityNameById.get(group.facilityId) ?? `Facility #${group.facilityId}`,
+          count: group._count._all,
+        }))
+        .filter((entry) => entry.count > 0),
+    };
+  }
+
+  async createReport(dto: CreateAdminReportDto, performedBy?: number): Promise<AdminReportItemDto> {
+    const adminId = this.ensureAdminId(performedBy);
+    const facilityId = dto.facilityId ?? dto.hospitalId;
+    const reportDate = dto.reportDate ? new Date(dto.reportDate) : null;
+    const sourceType = this.reportValidationService.sanitizeText(dto.sourceType, 100);
+    const internalNotes = this.reportValidationService.sanitizeText(dto.internalNotes, 5000);
+    const email = dto.email?.trim().toLowerCase() || null;
+
+    await this.reportValidationService.requireFacility(facilityId);
+
+    const report = await this.prismaService.$transaction(async (tx) => {
+      const created = await tx.report.create({
+        data: {
+          facilityId,
+          jobCategory: dto.jobCategory,
+          employmentYear: dto.employmentYear,
+          primaryConcern: this.reportValidationService.mapConcern(dto.reason),
+          email,
+          fingerprintHash: `${ADMIN_FINGERPRINT_PREFIX}${adminId}`,
+          ipHash: `${ADMIN_FINGERPRINT_PREFIX}${adminId}`,
+          userAgent: 'admin',
+          status: ReportStatus.APPROVED,
+          source: ReportSource.ADMIN,
+          reportDate,
+          sourceType,
+          internalNotes,
+          submittedAt: new Date(),
+          approvedAt: new Date(),
+          approvedById: adminId,
+        },
+        include: { facility: true, approvedBy: true },
+      });
+
+      await this.recomputeFacilityStats(tx, facilityId);
+
+      await tx.auditLog.create({
+        data: {
+          action: `REPORT_CREATED:${created.id}`,
+          performedById: adminId,
+        },
+      });
+
+      return created;
+    });
+
+    return this.mapReportRow(report);
+  }
+
+  async updateReport(
+    reportId: number,
+    dto: CreateAdminReportDto,
+    performedBy?: number,
+  ): Promise<AdminReportItemDto> {
+    const adminId = this.ensureAdminId(performedBy);
+    const facilityId = dto.facilityId ?? dto.hospitalId;
+    const reportDate = dto.reportDate ? new Date(dto.reportDate) : null;
+    const sourceType = this.reportValidationService.sanitizeText(dto.sourceType, 100);
+    const internalNotes = this.reportValidationService.sanitizeText(dto.internalNotes, 5000);
+    const email = dto.email?.trim().toLowerCase() || null;
+
+    const report = await this.prismaService.$transaction(async (tx) => {
+      const existing = await tx.report.findUnique({
+        where: { id: reportId },
+        include: { facility: true },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(`Report ${reportId} was not found`);
+      }
+
+      if (facilityId !== existing.facilityId) {
+        await this.reportValidationService.requireFacility(facilityId);
+      }
+
+      const updated = await tx.report.update({
+        where: { id: reportId },
+        data: {
+          facilityId,
+          jobCategory: dto.jobCategory,
+          employmentYear: dto.employmentYear,
+          primaryConcern: this.reportValidationService.mapConcern(dto.reason),
+          email,
+          reportDate,
+          sourceType,
+          internalNotes,
+        },
+        include: { facility: true, approvedBy: true },
+      });
+
+      if (facilityId !== existing.facilityId) {
+        await this.recomputeFacilityStats(tx, existing.facilityId);
+      }
+      await this.recomputeFacilityStats(tx, facilityId);
+
+      await tx.auditLog.create({
+        data: {
+          action: `REPORT_UPDATED:${reportId}`,
+          performedById: adminId,
+        },
+      });
+
+      return updated;
+    });
+
+    return this.mapReportRow(report);
+  }
+
+  async deleteReport(reportId: number, performedBy?: number): Promise<void> {
+    const adminId = this.ensureAdminId(performedBy);
+
+    await this.prismaService.$transaction(async (tx) => {
+      const existing = await tx.report.findUnique({
+        where: { id: reportId },
+        select: { id: true, facilityId: true },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(`Report ${reportId} was not found`);
+      }
+
+      await tx.report.delete({
+        where: { id: reportId },
+      });
+
+      await this.recomputeFacilityStats(tx, existing.facilityId);
+
+      await tx.auditLog.create({
+        data: {
+          action: `REPORT_DELETED:${reportId}`,
+          performedById: adminId,
+        },
+      });
+    });
   }
 
   async exportReportsCsv(): Promise<string> {
@@ -127,6 +309,10 @@ export class AdminsService {
       'employmentYear',
       'email',
       'status',
+      'source',
+      'reportDate',
+      'sourceType',
+      'internalNotes',
       'fingerprintHash',
       'ipHash',
       'userAgent',
@@ -146,6 +332,10 @@ export class AdminsService {
           row.employmentYear,
           this.csvEscape(row.email ?? ''),
           row.status.toLowerCase(),
+          row.source.toLowerCase(),
+          row.reportDate ? this.csvEscape(row.reportDate.toISOString()) : '',
+          this.csvEscape(row.sourceType ?? ''),
+          this.csvEscape(row.internalNotes ?? ''),
           this.csvEscape(row.fingerprintHash),
           this.csvEscape(row.ipHash),
           this.csvEscape(row.userAgent),
@@ -157,7 +347,6 @@ export class AdminsService {
   }
 
   async approveReport(reportId: number, performedBy?: number): Promise<void> {
-    const threshold = this.readNumberConfig('REPORT_PRIMARY_CONCERN_THRESHOLD', 3);
     const adminId = this.ensureAdminId(performedBy);
 
     await this.prismaService.$transaction(async (tx) => {
@@ -182,36 +371,7 @@ export class AdminsService {
         },
       });
 
-      const approvedReports = await tx.report.findMany({
-        where: {
-          facilityId: report.facilityId,
-          status: ReportStatus.APPROVED,
-        },
-        select: { primaryConcern: true },
-      });
-
-      const counts = new Map<WorkplaceConcern, number>();
-      for (const item of approvedReports) {
-        counts.set(item.primaryConcern, (counts.get(item.primaryConcern) ?? 0) + 1);
-      }
-
-      let topConcern: WorkplaceConcern | null = null;
-      let topCount = 0;
-      for (const [concern, count] of counts.entries()) {
-        if (count > topCount) {
-          topConcern = concern;
-          topCount = count;
-        }
-      }
-
-      await tx.facility.update({
-        where: { id: report.facilityId },
-        data: {
-          reportsReceived: { increment: 1 },
-          primaryConcern: topConcern && topCount >= threshold ? topConcern : null,
-          lastUpdated: new Date(),
-        },
-      });
+      await this.recomputeFacilityStats(tx, report.facilityId);
 
       await tx.auditLog.create({
         data: {
@@ -434,7 +594,7 @@ export class AdminsService {
   }
 
   private async buildSuspiciousLookup(): Promise<{
-    recentReports: Array<Pick<ReportRow, 'id' | 'fingerprintHash' | 'ipHash'>>;
+    recentReports: Array<Pick<AdminReportRow, 'id' | 'fingerprintHash' | 'ipHash'>>;
     fingerprintCounts: Map<string, number>;
     ipCounts: Map<string, number>;
   }> {
@@ -442,6 +602,7 @@ export class AdminsService {
     const recentReports = await this.prismaService.report.findMany({
       where: {
         submittedAt: { gte: since },
+        source: ReportSource.PUBLIC,
       },
       select: {
         id: true,
@@ -462,15 +623,22 @@ export class AdminsService {
   }
 
   private mapReport(
-    report: Report & { facility: Facility },
+    report: AdminReportRow,
     suspiciousLookup: Awaited<ReturnType<AdminsService['buildSuspiciousLookup']>>,
     threshold: number,
   ): AdminReportItemDto {
+    const mapped = this.mapReportRow(report);
     const fingerprintCount = suspiciousLookup.fingerprintCounts.get(report.fingerprintHash) ?? 0;
     const ipCount = suspiciousLookup.ipCounts.get(report.ipHash) ?? 0;
-    const suspiciousSubmission = fingerprintCount >= threshold || ipCount >= threshold;
-    const suspiciousReason = this.getSuspiciousReason(fingerprintCount, ipCount, threshold);
+    mapped.suspiciousSubmission = fingerprintCount >= threshold || ipCount >= threshold;
+    mapped.suspiciousReason = this.getSuspiciousReason(fingerprintCount, ipCount, threshold);
+    mapped.fingerprintHash = report.fingerprintHash;
+    mapped.ipHash = report.ipHash;
+    mapped.userAgent = report.userAgent;
+    return mapped;
+  }
 
+  private mapReportRow(report: AdminReportRow): AdminReportItemDto {
     return {
       id: report.id,
       submittedAt: report.submittedAt.toISOString(),
@@ -482,12 +650,78 @@ export class AdminsService {
       employmentYear: report.employmentYear,
       email: report.email,
       status: report.status.toLowerCase(),
-      suspiciousSubmission,
-      suspiciousReason,
-      fingerprintHash: report.fingerprintHash,
-      ipHash: report.ipHash,
-      userAgent: report.userAgent,
+      source: report.source.toLowerCase(),
+      reportDate: report.reportDate?.toISOString() ?? null,
+      sourceType: report.sourceType ?? null,
+      internalNotes: report.internalNotes ?? null,
+      approvedAt: report.approvedAt?.toISOString() ?? null,
+      approvedByName: report.approvedBy?.name ?? null,
     };
+  }
+
+  private buildReportFilter(
+    query: AdminReportQueryDto,
+    status: ReportStatus | undefined,
+  ): Prisma.ReportWhereInput {
+    const facilityFilter: Prisma.FacilityWhereInput = {
+      ...(query.facility ? { facilityName: { contains: query.facility, mode: 'insensitive' } } : {}),
+      ...(query.county ? { county: query.county } : {}),
+    };
+
+    const hasFacilityFilter = Object.keys(facilityFilter).length > 0;
+
+    return {
+      ...(status ? { status } : {}),
+      ...(query.source ? { source: query.source === 'admin' ? ReportSource.ADMIN : ReportSource.PUBLIC } : {}),
+      ...(query.category ? { jobCategory: { contains: query.category, mode: 'insensitive' } } : {}),
+      ...(query.dateFrom || query.dateTo
+        ? {
+            submittedAt: {
+              ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
+              ...(query.dateTo ? { lte: new Date(query.dateTo) } : {}),
+            },
+          }
+        : {}),
+      ...(hasFacilityFilter ? { facility: facilityFilter } : {}),
+    };
+  }
+
+  private async recomputeFacilityStats(
+    tx: Prisma.TransactionClient,
+    facilityId: number,
+  ): Promise<void> {
+    const threshold = this.readNumberConfig('REPORT_PRIMARY_CONCERN_THRESHOLD', 3);
+
+    const approvedReports = await tx.report.findMany({
+      where: {
+        facilityId,
+        status: ReportStatus.APPROVED,
+      },
+      select: { primaryConcern: true },
+    });
+
+    const counts = new Map<WorkplaceConcern, number>();
+    for (const item of approvedReports) {
+      counts.set(item.primaryConcern, (counts.get(item.primaryConcern) ?? 0) + 1);
+    }
+
+    let topConcern: WorkplaceConcern | null = null;
+    let topCount = 0;
+    for (const [concern, count] of counts.entries()) {
+      if (count > topCount) {
+        topConcern = concern;
+        topCount = count;
+      }
+    }
+
+    await tx.facility.update({
+      where: { id: facilityId },
+      data: {
+        reportsReceived: approvedReports.length,
+        primaryConcern: topConcern && topCount >= threshold ? topConcern : null,
+        lastUpdated: new Date(),
+      },
+    });
   }
 
   private mapFacility(facility: Facility): FacilityDetailDto {
