@@ -8,6 +8,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Building2, AlertTriangle, FileText, Flag, ShieldCheck, ArrowRight, type LucideIcon } from "lucide-react";
 import { useSeo, ORGANIZATION_SCHEMA, WEBSITE_SCHEMA, SITE_URL } from "@/hooks/use-seo";
 import { cn, getReportBadgeClasses } from "@/lib/utils";
+import { useCmsArticles } from "@/hooks/useCms";
+import { getCmsImageUrl } from "@/lib/cms";
+import { ArticleCard } from "@/components/editorial/ArticleCard";
+import { useCmsGuides } from "@/hooks/useCms";
+import { GUIDE_KINDS } from "@/lib/guides";
 
 const reportCtaClasses =
   "rounded-lg px-6 shadow-md hover:shadow-lg transition-all active:scale-[0.98] hover:bg-destructive/90 text-white font-semibold";
@@ -72,6 +77,15 @@ function StatCard({
 
 export default function Home() {
   const { data: stats } = useGetNationalStats();
+  const { data: articles, isError: articlesUnavailable } = useCmsArticles(3);
+  const salaryGuides = useCmsGuides("salary", 1);
+  const careerGuides = useCmsGuides("career", 1);
+  const workplaceGuides = useCmsGuides("workplace", 1);
+  const featuredGuides = [
+    ...(salaryGuides.data ?? []).map((guide) => ({ guide, kind: GUIDE_KINDS[0] })),
+    ...(careerGuides.data ?? []).map((guide) => ({ guide, kind: GUIDE_KINDS[1] })),
+    ...(workplaceGuides.data ?? []).map((guide) => ({ guide, kind: GUIDE_KINDS[2] })),
+  ].slice(0, 3);
 
   useSeo({
     title: "WardCheck — Know Your Next Employer | Kenya Hospital Reviews & Workplace Transparency",
@@ -178,6 +192,75 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        {articles && articles.length > 0 && !articlesUnavailable && (
+          <section className="border-t bg-muted/20 py-12 px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Latest from WardCheck</h2>
+                  <p className="mt-2 text-muted-foreground">
+                    Practical insights for healthcare professionals in Kenya.
+                  </p>
+                </div>
+                <Link
+                  href="/blog"
+                  className="shrink-0 text-sm font-semibold text-primary hover:underline"
+                >
+                  View all articles
+                </Link>
+              </div>
+              <div className="grid gap-6 md:grid-cols-3">
+                {articles.map((article) => (
+                  <ArticleCard
+                    key={article.slug}
+                    title={article.title}
+                    slug={article.slug}
+                    excerpt={article.excerpt}
+                    category={article.category?.name ?? null}
+                    publishedAt={article.publishedAt}
+                    author={article.author?.name ?? null}
+                    imageUrl={getCmsImageUrl(article.featuredImage, "medium")}
+                    href={`/blog/${article.slug}`}
+                    ctaLabel="Read article"
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {featuredGuides.length > 0 && (
+          <section className="py-12 px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Featured Guides</h2>
+                  <p className="mt-2 text-muted-foreground">Practical guidance for your healthcare career.</p>
+                </div>
+                <Link href="/guides" className="shrink-0 text-sm font-semibold text-primary hover:underline">
+                  Explore guides
+                </Link>
+              </div>
+              <div className="grid gap-6 md:grid-cols-3">
+                {featuredGuides.map(({ guide, kind }) => (
+                  <ArticleCard
+                    key={`${kind.kind}-${guide.slug}`}
+                    title={guide.title}
+                    slug={guide.slug}
+                    excerpt={guide.excerpt}
+                    category={kind.label}
+                    publishedAt={guide.publishedAt}
+                    author={guide.author?.name ?? null}
+                    imageUrl={getCmsImageUrl(guide.featuredImage, "medium")}
+                    href={`/guides/${kind.kind}/${guide.slug}`}
+                    ctaLabel="Read guide"
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Transparency & Disclaimer */}
         <section className="py-12 px-4 border-t bg-muted/20">

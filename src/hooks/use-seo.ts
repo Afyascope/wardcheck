@@ -11,6 +11,8 @@ export type SeoOptions = {
   robots?: string;
   canonicalUrl?: string;
   ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
   keywords?: string;
   jsonLd?: Record<string, unknown>[];
 };
@@ -88,6 +90,8 @@ export function useSeo({
   robots = "index,follow",
   canonicalUrl,
   ogImage = DEFAULT_OG_IMAGE,
+  ogTitle,
+  ogDescription,
   keywords,
   jsonLd,
 }: SeoOptions) {
@@ -107,16 +111,16 @@ export function useSeo({
     const canonical = canonicalUrl || `${SITE_URL}${path}`;
     setLinkTag("canonical", canonical);
 
-    setMetaTag("property", "og:title", title);
-    setMetaTag("property", "og:description", description);
+    setMetaTag("property", "og:title", ogTitle ?? title);
+    setMetaTag("property", "og:description", ogDescription ?? description);
     setMetaTag("property", "og:type", type);
     setMetaTag("property", "og:url", canonical);
     setMetaTag("property", "og:image", ogImage);
     setMetaTag("property", "og:site_name", "WardCheck");
     setMetaTag("property", "og:locale", "en_KE");
     setMetaTag("name", "twitter:card", "summary_large_image");
-    setMetaTag("name", "twitter:title", title);
-    setMetaTag("name", "twitter:description", description);
+    setMetaTag("name", "twitter:title", ogTitle ?? title);
+    setMetaTag("name", "twitter:description", ogDescription ?? description);
     setMetaTag("name", "twitter:image", ogImage);
 
     let jsonLdEl: HTMLScriptElement | null = null;
@@ -148,6 +152,8 @@ export function useSeo({
     robots,
     canonicalUrl,
     ogImage,
+    ogTitle,
+    ogDescription,
     keywords,
     JSON.stringify(jsonLd),
   ]);

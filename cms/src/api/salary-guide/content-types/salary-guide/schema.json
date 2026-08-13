@@ -1,0 +1,73 @@
+{
+  "kind": "collectionType",
+  "collectionName": "salary_guides",
+  "info": {
+    "singularName": "salary-guide",
+    "pluralName": "salary-guides",
+    "displayName": "WardCheck Salary Guide",
+    "description": "Salary expectation guides for healthcare professions."
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "excerpt": {
+      "type": "text"
+    },
+    "content": {
+      "type": "blocks"
+    },
+    "featuredImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "author": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::author.author",
+      "inversedBy": "salaryGuides"
+    },
+    "profession": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "salaryRange": {
+      "type": "string"
+    },
+    "salaryNotes": {
+      "type": "text"
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::category.category",
+      "inversedBy": "salaryGuides"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::tag.tag",
+      "inversedBy": "salaryGuides"
+    },
+    "seo": {
+      "type": "component",
+      "repeatable": false,
+      "component": "shared.seo"
+    }
+  }
+}

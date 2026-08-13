@@ -1,0 +1,50 @@
+{
+  "kind": "collectionType",
+  "collectionName": "categories",
+  "info": {
+    "singularName": "category",
+    "pluralName": "categories",
+    "displayName": "WardCheck Category",
+    "description": "Editorial categories for WardCheck content."
+  },
+  "options": {},
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::article.article",
+      "mappedBy": "category"
+    },
+    "salaryGuides": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::salary-guide.salary-guide",
+      "mappedBy": "category"
+    },
+    "careerGuides": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::career-guide.career-guide",
+      "mappedBy": "category"
+    },
+    "workplaceGuides": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::workplace-guide.workplace-guide",
+      "mappedBy": "category"
+    }
+  }
+}
