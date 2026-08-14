@@ -104,6 +104,11 @@ async function cmsRequest<T>(path: string, params: CmsParams = {}): Promise<T> {
 
 const CONTENT_POPULATE = "*";
 
+const ARTICLE_SLUG_ALIASES: Record<string, string> = {
+  "clinical-officer-salary-expectations-kenya":
+    "clinical-officer-salary-expectations-in-kenya",
+};
+
 function listParams(limit?: number): CmsParams {
   return {
     status: "published",
@@ -129,16 +134,13 @@ export async function getArticles(params?: { limit?: number }): Promise<CmsArtic
     "/articles",
     listParams(params?.limit),
   );
-  return response.data;
+  return Array.isArray(response.data) ? response.data : [];
 }
 
 export async function getArticleBySlug(slug: string): Promise<CmsArticle | null> {
-  const response = await cmsRequest<StrapiListResponse<CmsArticle>>(
-    "/articles",
-    listParams(100),
-  );
-  const articles = Array.isArray(response.data) ? response.data : [];
-  return articles.find((article) => article.slug === slug) ?? null;
+  const articles = await getArticles({ limit: 12 });
+  const cmsSlug = ARTICLE_SLUG_ALIASES[slug] ?? slug;
+  return articles.find((article) => article.slug === cmsSlug) ?? null;
 }
 
 /* ── Guides ────────────────────────────────────────────────────────────── */

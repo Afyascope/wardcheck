@@ -8,7 +8,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RichBlocks } from "@/components/editorial/RichBlocks";
 import { ArticleCard } from "@/components/editorial/ArticleCard";
 import { FullPageLoader } from "@/components/ui/loaders";
-import { NotFoundPage } from "@/components/NotFound";
 import { getCmsImageUrl } from "@/lib/cms";
 import { trackEvent } from "@/lib/analytics";
 import { getRelatedEditorial } from "@/lib/editorial";
@@ -99,7 +98,7 @@ export default function BlogPost() {
     );
   }
 
-  if (error) {
+  if (error || !article) {
     return (
       <AppLayout>
         <div className="flex-1 flex items-center justify-center px-6 py-20">
@@ -112,10 +111,6 @@ export default function BlogPost() {
         </div>
       </AppLayout>
     );
-  }
-
-  if (!article) {
-    return <NotFoundPage />;
   }
 
   return (
