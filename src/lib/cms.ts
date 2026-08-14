@@ -17,6 +17,16 @@ import type {
  * content through the public Strapi REST API (find / findOne). No admin or API token
  * is ever embedded in client-side code.
  */
+export class CmsError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "CmsError";
+    this.status = status;
+  }
+}
+
 function resolveCmsBaseUrl(value: string | undefined): string {
   const rawValue = value?.trim();
 
@@ -49,26 +59,26 @@ function resolveCmsBaseUrl(value: string | undefined): string {
   return parsedUrl.toString().replace(/\/+$/, "");
 }
 
-const CMS_BASE_URL = resolveCmsBaseUrl(import.meta.env.VITE_WARDCHECK_CMS_URL);
-
-export class CmsError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.name = "CmsError";
-    this.status = status;
+function getValidatedCmsBaseUrl(): string {
+  try {
+    return resolveCmsBaseUrl(import.meta.env.VITE_WARDCHECK_CMS_URL);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid CMS configuration.";
+    if (import.meta.env.DEV) {
+      console.error(`[WardCheck CMS] ${message}`);
+    }
+    throw new CmsError(0, message);
   }
 }
 
 export function getCmsBaseUrl(): string {
-  return CMS_BASE_URL;
+  return getValidatedCmsBaseUrl();
 }
 
 type CmsParams = Record<string, string | number | boolean | null | undefined>;
 
 async function cmsRequest<T>(path: string, params: CmsParams = {}): Promise<T> {
-  const url = new URL(`/api${path}`, `${CMS_BASE_URL}/`);
+  const url = new URL(`/api${path}`, `${getValidatedCmsBaseUrl()}/`);
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== "") {
@@ -125,9 +135,10 @@ export async function getArticles(params?: { limit?: number }): Promise<CmsArtic
 export async function getArticleBySlug(slug: string): Promise<CmsArticle | null> {
   const response = await cmsRequest<StrapiListResponse<CmsArticle>>(
     "/articles",
-    bySlugParams(slug),
+    listParams(100),
   );
-  return response.data[0] ?? null;
+  const articles = Array.isArray(response.data) ? response.data : [];
+  return articles.find((article) => article.slug === slug) ?? null;
 }
 
 /* ── Guides ────────────────────────────────────────────────────────────── */
@@ -229,5 +240,5 @@ export function getCmsImageUrl(
   const url = format?.url ?? media.url;
 
   if (/^https?:\/\//i.test(url)) return url;
-  return `${CMS_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  return `${getValidatedCmsBaseUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
 }

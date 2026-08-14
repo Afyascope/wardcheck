@@ -99,7 +99,22 @@ export default function BlogPost() {
     );
   }
 
-  if (error || !article) {
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex-1 flex items-center justify-center px-6 py-20">
+          <div className="max-w-lg text-center">
+            <h1 className="text-2xl font-semibold">Article unavailable</h1>
+            <p className="mt-4 text-muted-foreground">
+              We couldn&apos;t load this article right now. Please try again soon.
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!article) {
     return <NotFoundPage />;
   }
 
