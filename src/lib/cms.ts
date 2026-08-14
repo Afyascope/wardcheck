@@ -17,10 +17,39 @@ import type {
  * content through the public Strapi REST API (find / findOne). No admin or API token
  * is ever embedded in client-side code.
  */
-const CMS_BASE_URL = (import.meta.env.VITE_WARDCHECK_CMS_URL ?? "http://localhost:1338").replace(
-  /\/+$/,
-  "",
-);
+function resolveCmsBaseUrl(value: string | undefined): string {
+  const rawValue = value?.trim();
+
+  if (!rawValue) {
+    throw new Error(
+      "VITE_WARDCHECK_CMS_URL is required and must be an absolute http:// or https:// URL.",
+    );
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawValue);
+  } catch {
+    throw new Error(
+      `VITE_WARDCHECK_CMS_URL must be an absolute http:// or https:// URL. Received: ${rawValue}`,
+    );
+  }
+
+  if (
+    (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") ||
+    !parsedUrl.hostname ||
+    parsedUrl.search ||
+    parsedUrl.hash
+  ) {
+    throw new Error(
+      `VITE_WARDCHECK_CMS_URL must be an absolute http:// or https:// URL without a query or hash. Received: ${rawValue}`,
+    );
+  }
+
+  return parsedUrl.toString().replace(/\/+$/, "");
+}
+
+const CMS_BASE_URL = resolveCmsBaseUrl(import.meta.env.VITE_WARDCHECK_CMS_URL);
 
 export class CmsError extends Error {
   status: number;
@@ -39,7 +68,7 @@ export function getCmsBaseUrl(): string {
 type CmsParams = Record<string, string | number | boolean | null | undefined>;
 
 async function cmsRequest<T>(path: string, params: CmsParams = {}): Promise<T> {
-  const url = new URL(`${CMS_BASE_URL}/api${path}`, window.location.origin);
+  const url = new URL(`/api${path}`, `${CMS_BASE_URL}/`);
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== "") {
