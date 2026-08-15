@@ -28,7 +28,9 @@ export class CmsError extends Error {
 }
 
 function resolveCmsBaseUrl(value: string | undefined): string {
-  const rawValue = value?.trim();
+  const rawValue = value
+    ?.trim()
+    .replace(/^VITE_WARDCHECK_CMS_URL\s*=\s*/i, "");
 
   if (!rawValue) {
     throw new Error(
