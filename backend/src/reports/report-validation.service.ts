@@ -26,11 +26,13 @@ export class ReportValidationService {
       [ReportReason.Delayed_salary]: WorkplaceConcern.DELAYED_SALARY,
       [ReportReason.Salary_not_paid]: WorkplaceConcern.SALARY_NOT_PAID,
       [ReportReason.Underpayment]: WorkplaceConcern.UNDERPAYMENT,
-      [ReportReason.Contract_dispute]: WorkplaceConcern.CONTRACT_DISPUTE,
+      [ReportReason.No_written_contract]: WorkplaceConcern.NO_WRITTEN_CONTRACT,
       [ReportReason.Poor_management]: WorkplaceConcern.POOR_MANAGEMENT,
       [ReportReason.Bullying]: WorkplaceConcern.BULLYING,
       [ReportReason.Long_working_hours]: WorkplaceConcern.LONG_WORKING_HOURS,
       [ReportReason.Unsafe_working_conditions]: WorkplaceConcern.UNSAFE_WORKING_CONDITIONS,
+      [ReportReason.Unpaid_locum]: WorkplaceConcern.UNPAID_LOCUM,
+      [ReportReason.Inadequate_staffing]: WorkplaceConcern.INADEQUATE_STAFFING,
       [ReportReason.Other]: WorkplaceConcern.OTHER,
     };
 

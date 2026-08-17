@@ -27,11 +27,13 @@ export enum ReportReason {
   Delayed_salary = 'Delayed salary',
   Salary_not_paid = 'Salary not paid',
   Underpayment = 'Underpayment',
-  Contract_dispute = 'Contract dispute',
+  No_written_contract = 'No written contract',
   Poor_management = 'Poor management',
   Bullying = 'Bullying',
   Long_working_hours = 'Long working hours',
   Unsafe_working_conditions = 'Unsafe working conditions',
+  Unpaid_locum = 'Unpaid locum',
+  Inadequate_staffing = 'Inadequate staffing',
   Other = 'Other',
 }
 

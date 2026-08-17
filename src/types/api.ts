@@ -22,7 +22,6 @@ export const ReportReason = {
   Unsafe_working_conditions: "Unsafe working conditions",
   Unpaid_locum: "Unpaid locum",
   Inadequate_staffing: "Inadequate staffing",
-
   Other: "Other",
 } as const;
 
