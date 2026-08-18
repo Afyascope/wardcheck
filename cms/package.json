@@ -11,6 +11,10 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "strapi": "strapi",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck:admin": "tsc -p src/admin/tsconfig.json --noEmit",
+    "typecheck:server": "tsc --noEmit",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
@@ -21,6 +25,7 @@
     "@strapi/provider-upload-cloudinary": "^5.51.2",
     "@strapi/strapi": "5.51.2",
     "better-sqlite3": "12.8.0",
+    "markdown-it": "14.2.0",
     "pg": "^8.23.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
@@ -28,10 +33,12 @@
     "styled-components": "^6.0.0"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20.0.0 <=26.x.x",
